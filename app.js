@@ -1,6 +1,6 @@
 "use strict";
 (function () {
-  var APPV = "a1b627a";   // keep in lockstep with the ?v= cache-buster in index.html
+  var APPV = "e889945";   // keep in lockstep with the ?v= cache-buster in index.html
   const guideSvg = document.getElementById("guide");
   const canvas   = document.getElementById("pad");
   const ctx      = canvas.getContext("2d", { willReadFrequently: false });
@@ -22,7 +22,7 @@
   const LEVELS = {
     1: { R: 12,  thresh: 0.70, prec: 0.60, order: false, guideW: 7 }, // Viegli: fat shadow, any order
     2: { R: 6.5, thresh: 0.85, prec: 0.60, order: true,  guideW: 4 }, // Vidēji: thin shadow, in order
-    3: { R: 12,  thresh: 0.65, prec: 0.50, order: true,  guideW: 0 }, // Grūti: animation only, from memory
+    3: { R: 12,  thresh: 0.65, prec: 0.50, order: true,  guideW: 0, align: true }, // Grūti: from memory, anywhere on screen
   };
 
   let level = parseInt(localStorage.getItem("lv_level") || "2", 10);
@@ -58,6 +58,11 @@
   let inkTotal = 0, inkOk = 0, inkLen = 0;   // attempt-wide ink stats
   let sTotal = 0, sOk = 0, sLen = 0;         // current pen-stroke ink stats
   let lastS = null;          // previous pointer position in letter units
+  let inkStrokes = [];       // recorded pen strokes (unit coords) — align replay
+  let curStroke = null;
+  let tplFlat = [];          // template points + tangents, flat (recognition v2)
+  let tplShortC = [];        // centroids of short template strokes (accent snap)
+  let ruleBand = null;       // [topY, baselineY] of the writing ruling (display)
   let coverage = [];         // per-stroke Set of covered sample indices
   let expected = 0;          // next stroke index (order mode)
   let drawing = false;
@@ -120,7 +125,7 @@
       "app    " + r(appEl) + "\n" +
       "stage  " + r(stageEl) + "\n" +
       "frame  " + r(frameEl) + "\n" +
-      "footer " + r(document.querySelector("footer"));
+      "bar    " + r(document.getElementById("actionbar"));
   }
 
   // Pencil width, two modes:
@@ -187,6 +192,17 @@
 
     guideSvg.innerHTML = "";
     M = letterMatrix();
+    // writing ruling: cap band for uppercase, body band for lowercase —
+    // scaled by the same matrix as the letter, so it tracks Burtu izmērs
+    const ruleYs = lower ? [44, 82] : [14, 87];
+    ruleBand = ruleYs.map(y => M.d * y + M.f);
+    for (const ry of ruleBand) {
+      const ln = document.createElementNS(SVGNS, "line");
+      ln.setAttribute("x1", 2);  ln.setAttribute("x2", 98);
+      ln.setAttribute("y1", ry); ln.setAttribute("y2", ry);
+      ln.setAttribute("class", "rule-line");
+      guideSvg.appendChild(ln);
+    }
     // everything visual lives inside this group, so the slant/size transform
     // applies uniformly to guides, numbers, arrows and the demo pen
     artG = document.createElementNS(SVGNS, "g");
@@ -197,12 +213,14 @@
     expected = 0;
     guideLen = 0;
     inkTotal = inkOk = inkLen = 0;
+    inkStrokes = []; curStroke = null;
     demoGen++;            // invalidate any in-flight demo from a previous letter
     demoPlaying = false;
     // cancel pending ✓-advance / ✗-clear: navigating during an overlay must
     // not advance twice or wipe the next letter's ink
     clearTimeout(advanceTimer);
     clearTimeout(failTimer);
+    clearTimeout(verdictTimer);
     okBox.classList.remove("show");
     badBox.classList.remove("show");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -237,10 +255,30 @@
         win: Math.max(1, Math.round(2.0 / Math.max(spacing, 1e-6))),
         tiny:  plen <= 8,    // dots: tap-friendly, whole-stroke credit
         short: plen <= 18,   // commas/short bars: no ends/run requirements
+        alignShort: plen <= 28,   // accents, relaxed in align mode only
       });
       coverage.push(new Set());
       guideLen += plen;
     });
+
+    // recognition v2 needs the template as flat point+tangent arrays and the
+    // centroids of its short strokes (accent snap targets)
+    tplFlat = [];
+    tplShortC = [];
+    for (const g of guidePaths) {
+      const pts = g.points, n = pts.length;
+      for (let i = 0; i < n; i++) {
+        const a = pts[Math.max(0, i - 2)], b = pts[Math.min(n - 1, i + 2)];
+        const L = Math.hypot(b.x - a.x, b.y - a.y) || 1e-9;
+        tplFlat.push({ x: pts[i].x, y: pts[i].y,
+                       tx: (b.x - a.x) / L, ty: (b.y - a.y) / L });
+      }
+      if (g.len <= 34) {
+        let sx = 0, sy = 0;
+        for (const p of pts) { sx += p.x; sy += p.y; }
+        tplShortC.push({ x: sx / n, y: sy / n });
+      }
+    }
 
     // memory mode always demos — with no shadow, the animation is the only
     // way to see the letter, whatever the Animācija toggle says
@@ -325,48 +363,50 @@
     return m;
   }
 
-  function markCoverage(sx, sy) {
-    // scale tolerance with the letter: a fixed radius on a shrunken letter
-    // would span neighbouring strokes and let a scribble pass
-    const R = LEVELS[level].R * (size / 100);
+  // Nearest stroke only (ties credit both — touching strokes). Within it,
+  // PROGRESSION CREDIT: only ~2 units of arc around the closest approach.
+  // Crediting the whole R-ball let an X or scribble complete letters: one
+  // sample painted a 24-unit window, so crossings counted as tracing.
+  // Pure: updates coverage only; callers keep their own ink stats.
+  function creditSample(sx, sy, R) {
     const R2 = R * R;
-    if (!guidePaths.length) return;
-
-    // Nearest stroke only (ties credit both — touching strokes). Within it,
-    // PROGRESSION CREDIT: only ~2 units of arc around the closest approach.
-    // Crediting the whole R-ball let an X or scribble complete letters: one
-    // sample painted a 24-unit window, so crossings counted as tracing.
     const d = guidePaths.map(g => strokeDist(sx, sy, g.points));
     let best = 0;
     for (let i = 1; i < d.length; i++) if (d[i] < d[best]) best = i;
-
-    let credited = false;
-    if (d[best] <= R) {
-      for (let si = 0; si < guidePaths.length; si++) {
-        if (d[si] > d[best] + 1e-9) continue;
-        const g = guidePaths[si], pts = g.points;
-        if (g.tiny) {
-          // dots: a tap anywhere near credits the whole mark
-          for (let k = 0; k < pts.length; k++) {
-            const dx = pts[k].x - sx, dy = pts[k].y - sy;
-            if (dx * dx + dy * dy <= R2) coverage[si].add(k);
-          }
-          credited = true;
-          continue;
-        }
-        let j = 0, bd = Infinity;
+    if (d[best] > R) return false;
+    for (let si = 0; si < guidePaths.length; si++) {
+      if (d[si] > d[best] + 1e-9) continue;
+      const g = guidePaths[si], pts = g.points;
+      if (g.tiny) {
+        // dots: a tap anywhere near credits the whole mark
         for (let k = 0; k < pts.length; k++) {
           const dx = pts[k].x - sx, dy = pts[k].y - sy;
-          const dd = dx * dx + dy * dy;
-          if (dd < bd) { bd = dd; j = k; }
+          if (dx * dx + dy * dy <= R2) coverage[si].add(k);
         }
-        const hi = Math.min(pts.length - 1, j + g.win);
-        for (let k = Math.max(0, j - g.win); k <= hi; k++) coverage[si].add(k);
-        credited = true;
+        continue;
       }
+      let j = 0, bd = Infinity;
+      for (let k = 0; k < pts.length; k++) {
+        const dx = pts[k].x - sx, dy = pts[k].y - sy;
+        const dd = dx * dx + dy * dy;
+        if (dd < bd) { bd = dd; j = k; }
+      }
+      const hi = Math.min(pts.length - 1, j + g.win);
+      for (let k = Math.max(0, j - g.win); k <= hi; k++) coverage[si].add(k);
     }
+    return true;
+  }
+
+  function markCoverage(sx, sy) {
+    if (!guidePaths.length) return;
     inkTotal++; sTotal++;
-    if (credited) { inkOk++; sOk++; }
+    // align mode scores via alignedCheck's replay — live position is
+    // irrelevant there (the whole point is drawing anywhere)
+    if (LEVELS[level].align) return;
+    // scale tolerance with the letter: a fixed radius on a shrunken letter
+    // would span neighbouring strokes and let a scribble pass
+    const R = LEVELS[level].R * (size / 100);
+    if (creditSample(sx, sy, R)) { inkOk++; sOk++; }
   }
 
   // fast swipes deliver sparse events; mark along the segment so progression
@@ -398,11 +438,14 @@
     activeType = ev.pointerType || "";
     drawing = true;
     drewAnything = true;
+    clearTimeout(verdictTimer);   // still drawing — no verdict yet
     sTotal = sOk = 0; sLen = 0;
+    curStroke = [];
     ctx.lineWidth = inkWidth();   // re-read: level/size may have changed since
     const s = toSvg(ev);
     lastPt = toPx(s);
     lastS = s;
+    curStroke.push(s);
     markCoverage(s.x, s.y);
     ctx.beginPath();
     ctx.moveTo(lastPt.x, lastPt.y);
@@ -422,6 +465,7 @@
       ctx.lineTo(p.x, p.y);
       ctx.stroke();
       lastPt = p;
+      curStroke.push(s);
       markAlong(lastS, s);
       lastS = s;
     }
@@ -429,6 +473,9 @@
   function endDraw(ev) {
     if (!drawing || (ev && ev.pointerId !== activeId)) return;
     drawing = false;
+    if (curStroke && curStroke.length > 1) inkStrokes.push(curStroke);
+    curStroke = null;
+    if (LEVELS[level].align) { alignedCheck(); return; }
     // a substantial pen stroke that mostly missed the letter is junk — ✗ now
     if (sLen >= 15 && sTotal > 0 && sOk / sTotal < 0.35) { fail(); return; }
     check();
@@ -441,11 +488,13 @@
   // bars) relax the rules a wandering hand can't satisfy at that scale.
   // Constants tuned by simulation against X/scribble attacks vs split /
   // one-drag / sloppy tracing on all 66 letters (see memory notes).
-  function strokeDone(i) {
+  function strokeDone(i, thArg, alignMode) {
     const g = guidePaths[i], n = g.points.length, cov = coverage[i];
-    const th = LEVELS[level].thresh;
+    const th = thArg || LEVELS[level].thresh;
     if (g.tiny)  return cov.size / n >= Math.min(th, 0.5);
-    if (g.short) return cov.size / n >= Math.min(th, 0.7);
+    // in align mode accents (macrons, carons, commas <= 28 units) relax too:
+    // their GAP from the body varies between hands, ends/run are unfair there
+    if (g.short || (alignMode && g.alignShort)) return cov.size / n >= Math.min(th, 0.7);
     if (cov.size / n < th) return false;
     const head = Math.max(1, Math.ceil(n * 0.12));
     let hasHead = false, hasTail = false;
@@ -496,15 +545,256 @@
     }
   }
 
+  let verdictTimer = null;   // Grūti: pending "you stopped — is it right?" ✗
+
+  // ---------- Grūti: aligned shape matching ----------
+  // The letter may be drawn ANYWHERE at any size: the ink is translated and
+  // uniformly scaled so its centroid and RMS radius match the template's,
+  // then validated with the standard machinery at a TIGHTER tolerance —
+  // position is already forgiven, so the fat live R is not justified.
+  // No rotation: a rotated letter is wrong. Stroke count/order are ignored:
+  // the template's segmentation is idiosyncratic to the recording (H was
+  // recorded as one looping stroke; families draw it as three).
+  // Constants tuned in tools/sim_align.py: correct-anywhere 264/264,
+  // attacks 2/132, confusions 2/198.
+  // Recognition engine v2 (tools/engine2.py is the tuned reference):
+  //  1. per-axis centroid/RMS alignment  2. resample ink at 2-unit spacing
+  //  3. two ICP refinement passes        4. bounded local snap for accents
+  //  5. coverage/ends/run replay + symmetric worst-10% distance tails +
+  //     tangent-direction agreement + ink economy.
+  // Three-seed simulation: legit 785/792, attacks 0/396, confusions 1/594.
+  const ALIGN = {
+    R: 7, thresh: 0.72, dirMin: 0.75, tailF: 6.5, tailB: 5.2,
+    scaleMin: 0.5, scaleMax: 3, minDiag: 18, snapMax: 8, step: 2.0,
+  };
+
+  function resampleStroke(st) {
+    const out = [{ x: st[0].x, y: st[0].y }];
+    let acc = 0;
+    for (let i = 1; i < st.length; i++) {
+      let ax = st[i - 1].x, ay = st[i - 1].y;
+      const bx = st[i].x, by = st[i].y;
+      let seg = Math.hypot(bx - ax, by - ay);
+      while (acc + seg >= ALIGN.step) {
+        const t = (ALIGN.step - acc) / seg;
+        ax += (bx - ax) * t; ay += (by - ay) * t;
+        out.push({ x: ax, y: ay });
+        seg = Math.hypot(bx - ax, by - ay);
+        acc = 0;
+      }
+      acc += seg;
+    }
+    if (out.length < 2) out.push({ x: st[st.length - 1].x, y: st[st.length - 1].y });
+    return out;
+  }
+
+  function nearestTpl(p) {
+    let bd = Infinity, bi = 0;
+    for (let i = 0; i < tplFlat.length; i++) {
+      const dx = tplFlat[i].x - p.x, dy = tplFlat[i].y - p.y;
+      const d = dx * dx + dy * dy;
+      if (d < bd) { bd = d; bi = i; }
+    }
+    return { d: Math.sqrt(bd), i: bi };
+  }
+
+  function polyLen(st) {
+    let L = 0;
+    for (let i = 1; i < st.length; i++) L += Math.hypot(st[i].x - st[i-1].x, st[i].y - st[i-1].y);
+    return L;
+  }
+
+  // shared recognition core: A0 = initialized (translated/scaled) ink strokes
+  function recogCore(A0) {
+    const n = guidePaths.length;
+    let A = A0.map(resampleStroke);
+
+    // ICP refinement: per-axis regression onto nearest template points
+    for (let it = 0; it < 2; it++) {
+      const pa = [], pq = [];
+      for (const st of A) for (const p of st) {
+        const nn = nearestTpl(p);
+        if (nn.d <= 3 * ALIGN.R) { pa.push(p); pq.push(tplFlat[nn.i]); }
+      }
+      if (pa.length < 8) break;
+      let max_ = 0, may = 0, mqx = 0, mqy = 0;
+      for (let i = 0; i < pa.length; i++) {
+        max_ += pa[i].x; may += pa[i].y; mqx += pq[i].x; mqy += pq[i].y;
+      }
+      max_ /= pa.length; may /= pa.length; mqx /= pa.length; mqy /= pa.length;
+      let vax = 0, vay = 0, gxn = 0, gyn = 0;
+      for (let i = 0; i < pa.length; i++) {
+        vax += (pa[i].x - max_) ** 2; vay += (pa[i].y - may) ** 2;
+        gxn += (pa[i].x - max_) * (pq[i].x - mqx);
+        gyn += (pa[i].y - may) * (pq[i].y - mqy);
+      }
+      let gx = gxn / (vax || 1e-9), gy = gyn / (vay || 1e-9);
+      gx = Math.min(Math.max(gx, 0.8), 1.25);
+      gy = Math.min(Math.max(gy, 0.8), 1.25);
+      A = A.map(st => st.map(p => ({ x: mqx + (p.x - max_) * gx,
+                                     y: mqy + (p.y - may) * gy })));
+    }
+
+    // bounded local snap: small ink strokes onto nearest small template stroke
+    for (let si = 0; si < A.length; si++) {
+      const st = A[si];
+      if (polyLen(st) > 30 || !tplShortC.length) continue;
+      let scx = 0, scy = 0;
+      for (const p of st) { scx += p.x; scy += p.y; }
+      scx /= st.length; scy /= st.length;
+      let bv = Infinity, bdx = 0, bdy = 0;
+      for (const c of tplShortC) {
+        const d = (c.x - scx) ** 2 + (c.y - scy) ** 2;
+        if (d < bv) { bv = d; bdx = c.x - scx; bdy = c.y - scy; }
+      }
+      if (bv <= 100) {
+        const dx = Math.max(-ALIGN.snapMax, Math.min(ALIGN.snapMax, bdx));
+        const dy = Math.max(-ALIGN.snapMax, Math.min(ALIGN.snapMax, bdy));
+        A[si] = st.map(p => ({ x: p.x + dx, y: p.y + dy }));
+      }
+    }
+
+    // coverage replay + junk
+    coverage = guidePaths.map(() => new Set());
+    let junky = false, alen = 0;
+    for (const st of A) {
+      let jOk = 0;
+      for (const p of st) if (creditSample(p.x, p.y, ALIGN.R)) jOk++;
+      const L = polyLen(st);
+      alen += L;
+      if (L >= 15 && st.length > 0 && jOk / st.length < 0.35) junky = true;
+    }
+
+    let doneN = 0;
+    for (let i = 0; i < n; i++) if (strokeDone(i, ALIGN.thresh, true)) doneN++;
+
+    // symmetric worst-10% distance tails + direction agreement
+    const apts = [];
+    for (const st of A) for (const p of st) apts.push(p);
+    const fwd = [];
+    for (const q of tplFlat) {
+      let bd = Infinity;
+      for (const p of apts) {
+        const d = (q.x - p.x) ** 2 + (q.y - p.y) ** 2;
+        if (d < bd) bd = d;
+      }
+      fwd.push(Math.sqrt(bd));
+    }
+    fwd.sort((a, b) => a - b);
+    const bwd = [];
+    let dirSum = 0, dirN = 0;
+    for (const st of A) {
+      const m = st.length;
+      for (let i = 0; i < m; i++) {
+        const nn = nearestTpl(st[i]);
+        bwd.push(nn.d);
+        if (nn.d <= ALIGN.R * 1.5) {
+          const a = st[Math.max(0, i - 2)], b = st[Math.min(m - 1, i + 2)];
+          const L = Math.hypot(b.x - a.x, b.y - a.y) || 1e-9;
+          const q = tplFlat[nn.i];
+          dirSum += Math.abs(((b.x - a.x) / L) * q.tx + ((b.y - a.y) / L) * q.ty);
+          dirN++;
+        }
+      }
+    }
+    bwd.sort((a, b) => a - b);
+    const kf = Math.max(1, Math.floor(fwd.length / 10));
+    const kb = Math.max(1, Math.floor(bwd.length / 10));
+    let tailF = 0, tailB = 0;
+    for (let i = fwd.length - kf; i < fwd.length; i++) tailF += fwd[i];
+    for (let i = bwd.length - kb; i < bwd.length; i++) tailB += bwd[i];
+    tailF /= kf; tailB /= kb;
+    const dirScore = dirN ? dirSum / dirN : 0;
+
+    const over = alen >= 1.9 * guideLen ||
+                 (alen >= 1.1 * guideLen && doneN < 0.5 * n);
+    const ok = doneN === n && alen >= 0.6 * guideLen && !junky && !over &&
+               tailF <= ALIGN.tailF && tailB <= ALIGN.tailB &&
+               dirScore >= ALIGN.dirMin;
+    return { ok: ok, over: over, alen: alen, doneN: doneN };
+  }
+
+  function alignedCheck() {
+    const n = guidePaths.length;
+    if (!inkStrokes.length || !n || !tplFlat.length) return;
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let cx = 0, cy = 0, cnt = 0;
+    for (const st of inkStrokes) for (const p of st) {
+      if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+      cx += p.x; cy += p.y; cnt++;
+    }
+    if (Math.hypot(maxX - minX, maxY - minY) < ALIGN.minDiag) return;
+    cx /= cnt; cy /= cnt;
+
+    let tx = 0, ty = 0;
+    for (const q of tplFlat) { tx += q.x; ty += q.y; }
+    tx /= tplFlat.length; ty /= tplFlat.length;
+
+    // RULED PATH first: written between the lines -> y is trusted as-is,
+    // only x translates. This is the strong prior that fixes the misses.
+    let ruled = null;
+    if (ruleBand) {
+      const bT = ruleBand[0], bB = ruleBand[1];
+      const bh = Math.max(bB - bT, 1e-6);
+      const span = maxY - minY;
+      if (Math.abs((minY + maxY) / 2 - (bT + bB) / 2) <= 0.45 * bh &&
+          span / bh >= 0.45 && span / bh <= 2.0) {
+        ruled = recogCore(inkStrokes.map(st =>
+          st.map(p => ({ x: p.x - cx + tx, y: p.y }))));
+        if (ruled.ok) { succeed(); return; }
+      }
+    }
+
+    // FREE PATH: per-axis alignment, works anywhere on screen
+    let irx = 0, iry = 0;
+    for (const st of inkStrokes) for (const p of st) {
+      irx += (p.x - cx) * (p.x - cx); iry += (p.y - cy) * (p.y - cy);
+    }
+    irx = Math.max(Math.sqrt(irx / cnt), 1e-6);
+    iry = Math.max(Math.sqrt(iry / cnt), 1e-6);
+    let trx = 0, tryy = 0;
+    for (const q of tplFlat) {
+      trx += (q.x - tx) * (q.x - tx); tryy += (q.y - ty) * (q.y - ty);
+    }
+    trx = Math.max(Math.sqrt(trx / tplFlat.length), 1e-6);
+    tryy = Math.max(Math.sqrt(tryy / tplFlat.length), 1e-6);
+    const sx = trx / irx, sy = tryy / iry;
+
+    let free = null;
+    if (sx >= ALIGN.scaleMin && sx <= ALIGN.scaleMax &&
+        sy >= ALIGN.scaleMin && sy <= ALIGN.scaleMax) {
+      free = recogCore(inkStrokes.map(st =>
+        st.map(p => ({ x: tx + (p.x - cx) * sx, y: ty + (p.y - cy) * sy }))));
+      if (free.ok) { succeed(); return; }
+    }
+
+    const best = free || ruled;
+    if (!best) return;                 // not judgeable yet — keep waiting
+    if (best.over) { fail(); return; }
+    if (best.alen >= 0.4 * guideLen) {
+      clearTimeout(verdictTimer);
+      verdictTimer = setTimeout(() => {
+        if (!drawing && !okBox.classList.contains("show") &&
+            !badBox.classList.contains("show")) fail();
+      }, 3000);
+    }
+  }
+
   let failTimer = null;
   function fail() {
     if (badBox.classList.contains("show") || okBox.classList.contains("show")) return;
+    clearTimeout(verdictTimer);
     badBox.classList.add("show");
     beep(150);
     clearTimeout(failTimer);
     failTimer = setTimeout(() => {
       badBox.classList.remove("show");
       clearInk();
+      // memory mode: show the letter again after every miss, not just the
+      // first — the demo is the only reference the child has
+      if (LEVELS[level].align) setTimeout(playDemo, 250);
     }, 950);
   }
 
@@ -588,6 +878,8 @@
     expected = 0;
     drewAnything = false;
     inkTotal = inkOk = inkLen = 0;
+    inkStrokes = []; curStroke = null;
+    clearTimeout(verdictTimer);
   }
 
   function setLevel(n) {
@@ -712,6 +1004,7 @@
   }
 
   // init
+  document.getElementById("appVer").textContent = "Versija: " + APPV;
   layout();
   sizeRange.value = size;
   updateInkUI();

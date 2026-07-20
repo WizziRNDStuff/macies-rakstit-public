@@ -59,6 +59,8 @@
   /* guide letter (SVG is viewBox-based, so it scales with the frame) */
   .guide-stroke{fill:none;stroke:var(--faint);stroke-width:9;
     stroke-linecap:round;stroke-linejoin:round;}
+  /* writing ruling: the child writes the letter body between these */
+  .rule-line{stroke:#dcdcdc;stroke-width:.7;stroke-dasharray:3 2.6;}
   .num{fill:var(--guide);font-weight:700;font-size:7px;}
   .arrow{fill:var(--guide);}
 
@@ -70,13 +72,14 @@
   .check{fill:none;stroke:var(--ok);stroke-width:10;stroke-linecap:round;stroke-linejoin:round;}
   .cross{fill:none;stroke:var(--bad);stroke-width:10;stroke-linecap:round;}
 
-  /* one row always: buttons share the width instead of forcing a min-width;
-     nowrap so nothing ever drops to a second line on the tablet */
-  footer{display:flex;flex-wrap:nowrap;gap:clamp(6px,1.2vw,14px);
+  /* action bar sits at the TOP: a wrist resting on the tablet's lower edge
+     while writing was hitting the buttons. One row always: buttons share the
+     width instead of forcing a min-width; nowrap so nothing ever wraps. */
+  #actionbar{display:flex;flex-wrap:nowrap;gap:clamp(6px,1.2vw,14px);
     align-items:center;justify-content:center;
     padding:clamp(8px,1.6vmin,14px) clamp(6px,1.5vw,18px);
-    border-top:var(--bw) solid var(--ink);flex:0 0 auto;}
-  footer button{flex:1 1 0;min-width:0;white-space:nowrap;
+    border-bottom:var(--bw) solid var(--ink);flex:0 0 auto;}
+  #actionbar button{flex:1 1 0;min-width:0;white-space:nowrap;
     font-size:clamp(13px,2.4vmin,20px);
     padding:clamp(8px,1.4vmin,12px) clamp(4px,1vw,16px);}
   button{font-size:clamp(15px,2.6vmin,22px);font-weight:700;
@@ -140,6 +143,11 @@
   #menu #sizeRange,#menu #inkRange{width:100%;}
   #menu .lbl{font-size:clamp(12px,2vmin,16px);font-weight:700;color:var(--guide);
     text-transform:uppercase;letter-spacing:.5px;}
+  /* build version, pinned to the drawer's bottom; deploy.sh stamps APPV so
+     this always shows which build is actually loaded (no ?debug needed) */
+  #menu .ver{margin-top:auto;text-align:center;color:var(--guide);
+    font-size:clamp(11px,1.8vmin,14px);padding-top:clamp(8px,2vmin,14px);
+    font-variant-numeric:tabular-nums;}
   .cbtn{font-size:clamp(13px,2.2vmin,18px);font-weight:700;
     padding:clamp(5px,1vmin,9px) clamp(10px,2vw,18px);
     border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
@@ -204,8 +212,8 @@
   }
   /* Short landscape (e.g. phone on its side): trim vertical padding */
   @media (max-height:430px){
-    header,footer{padding-top:4px;padding-bottom:4px;}
-    footer{gap:8px;}
+    header,#actionbar{padding-top:4px;padding-bottom:4px;}
+    #actionbar{gap:8px;}
   }
 </style>
 </head>
@@ -222,6 +230,13 @@
     </button>
   </header>
 
+  <nav id="actionbar">
+    <button id="prev">◀ Atpakaļ</button>
+    <button id="next">Tālāk ▶</button>
+    <button id="showDemo">Parādi</button>
+    <button id="clear">Dzēst</button>
+  </nav>
+
 
   <div id="stage">
     <div id="frame">
@@ -236,12 +251,6 @@
     </div>
   </div>
 
-  <footer>
-    <button id="prev">◀ Atpakaļ</button>
-    <button id="next">Tālāk ▶</button>
-    <button id="showDemo">Parādi</button>
-    <button id="clear">Dzēst</button>
-  </footer>
 </div>
 
 <div id="picker" aria-labelledby="pickerTitle">
@@ -293,11 +302,12 @@
                aria-label="Zīmuļa resnums">
       </div>
     </div>
+    <div class="ver" id="appVer"></div>
   </div>
 </aside>
 
 <!-- ?v= busts stale caches on tablets; bump it when either file changes -->
-<script src="letters.js?v=a1b627a"></script>
-<script src="app.js?v=a1b627a"></script>
+<script src="letters.js?v=e889945"></script>
+<script src="app.js?v=e889945"></script>
 </body>
 </html>
