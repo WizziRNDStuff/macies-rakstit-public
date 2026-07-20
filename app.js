@@ -1,6 +1,6 @@
 "use strict";
 (function () {
-  var APPV = "e889945";   // keep in lockstep with the ?v= cache-buster in index.html
+  var APPV = "41e6100";   // keep in lockstep with the ?v= cache-buster in index.html
   const guideSvg = document.getElementById("guide");
   const canvas   = document.getElementById("pad");
   const ctx      = canvas.getContext("2d", { willReadFrequently: false });
@@ -12,17 +12,18 @@
 
   // ---------- difficulty levels ----------
   // R: tolerance radius (0..100 units) | thresh: fraction of each stroke to cover
-  // numbers/arrows: show hints | order: strokes must be traced in sequence
   // guideW: gray guide (shadow) stroke width — thinner on harder levels
+  // Stroke order and travel direction are deliberately NOT enforced anywhere;
+  // dots/chevrons/animation teach them, validation stays forgiving.
   // guideW is purely the grey shadow's width — tolerance is R, so thinning it
   // costs no difficulty. guideW 0 = no shadow at all (memory mode).
   // Numbers/arrows are gone everywhere: on recorded handwriting strokes they
   // landed on top of the letter and pointed misleading directions.
   // prec = min fraction of the attempt's ink that must land on the letter
   const LEVELS = {
-    1: { R: 12,  thresh: 0.70, prec: 0.60, order: false, guideW: 7 }, // Viegli: fat shadow, any order
-    2: { R: 6.5, thresh: 0.85, prec: 0.60, order: true,  guideW: 4 }, // Vidēji: thin shadow, in order
-    3: { R: 12,  thresh: 0.65, prec: 0.50, order: true,  guideW: 0, align: true }, // Grūti: from memory, anywhere on screen
+    1: { R: 12,  thresh: 0.70, prec: 0.60, guideW: 7, arrows: true }, // Viegli: fat shadow + start dots + chevrons
+    2: { R: 6.5, thresh: 0.85, prec: 0.60, guideW: 4 },               // Vidēji: thin shadow, tighter tolerance
+    3: { R: 12,  thresh: 0.65, prec: 0.50, guideW: 0, align: true },  // Grūti: from memory, anywhere on screen
   };
 
   let level = parseInt(localStorage.getItem("lv_level") || "2", 10);
@@ -64,7 +65,6 @@
   let tplShortC = [];        // centroids of short template strokes (accent snap)
   let ruleBand = null;       // [topY, baselineY] of the writing ruling (display)
   let coverage = [];         // per-stroke Set of covered sample indices
-  let expected = 0;          // next stroke index (order mode)
   let drawing = false;
   let lastPt = null;
   let drewAnything = false;
@@ -154,7 +154,13 @@
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.lineWidth = inkWidth();
-    ctx.strokeStyle = "#000";
+    applyInkColor();
+  }
+
+  // pen colour = the theme's --ink (indigo in colourful, black in e-ink)
+  function applyInkColor() {
+    ctx.strokeStyle = getComputedStyle(document.documentElement)
+      .getPropertyValue("--ink").trim() || "#000";
   }
 
   function toPx(p) {
@@ -210,7 +216,6 @@
     guideSvg.appendChild(artG);
     guidePaths = [];
     coverage = [];
-    expected = 0;
     guideLen = 0;
     inkTotal = inkOk = inkLen = 0;
     inkStrokes = []; curStroke = null;
@@ -259,6 +264,20 @@
       });
       coverage.push(new Set());
       guideLen += plen;
+
+      // Viegli: start dot + direction chevrons. Both are GUIDANCE, not
+      // enforced rules — validation accepts either travel direction.
+      if (cfg.arrows) {
+        addChevrons(local);
+        if (plen >= 12 * M.a) {
+          const dot = document.createElementNS(SVGNS, "circle");
+          dot.setAttribute("cx", local[0].x);
+          dot.setAttribute("cy", local[0].y);
+          dot.setAttribute("r", 2.6);
+          dot.setAttribute("class", "startdot");
+          artG.appendChild(dot);
+        }
+      }
     });
 
     // recognition v2 needs the template as flat point+tangent arrays and the
@@ -283,6 +302,33 @@
     // memory mode always demos — with no shadow, the animation is the only
     // way to see the letter, whatever the Animācija toggle says
     if ((animOn || !cfg.guideW) && playAnim !== false) setTimeout(playDemo, 350);
+  }
+
+  function addChevrons(pts) {
+    const cum = [0];
+    for (let i = 1; i < pts.length; i++) {
+      cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i-1].x, pts[i].y - pts[i-1].y));
+    }
+    const total = cum[cum.length - 1];
+    if (total < 12) return;
+    for (let s = 12; s <= total - 8; s += 22) {
+      let j = 0;
+      while (j < cum.length - 1 && cum[j] < s) j++;
+      let a = j, b = j;
+      while (a > 0 && cum[j] - cum[a] < 2.5) a--;
+      while (b < pts.length - 1 && cum[b] - cum[j] < 2.5) b++;
+      const dx = pts[b].x - pts[a].x, dy = pts[b].y - pts[a].y;
+      const L = Math.hypot(dx, dy) || 1e-9;
+      const tx = dx / L, ty = dy / L, nx = -ty, ny = tx;
+      const sz = 2.2, px = pts[j].x, py = pts[j].y;
+      const d = "M" + (px - tx*sz*0.7 + nx*sz).toFixed(1) + "," + (py - ty*sz*0.7 + ny*sz).toFixed(1) +
+                " L" + (px + tx*sz).toFixed(1) + "," + (py + ty*sz).toFixed(1) +
+                " L" + (px - tx*sz*0.7 - nx*sz).toFixed(1) + "," + (py - ty*sz*0.7 - ny*sz).toFixed(1);
+      const el = document.createElementNS(SVGNS, "path");
+      el.setAttribute("d", d);
+      el.setAttribute("class", "dirarrow");
+      artG.appendChild(el);
+    }
   }
 
   // ---------- animation demo ----------
@@ -523,12 +569,7 @@
     if (!drewAnything || !guidePaths.length) return;
 
     let doneN = 0;
-    if (cfg.order) {
-      while (expected < guidePaths.length && strokeDone(expected)) expected++;
-      doneN = expected;
-    } else {
-      for (let i = 0; i < guidePaths.length; i++) if (strokeDone(i)) doneN++;
-    }
+    for (let i = 0; i < guidePaths.length; i++) if (strokeDone(i)) doneN++;
     const total = guidePaths.length;
     const prec = inkTotal ? inkOk / inkTotal : 0;
 
@@ -840,6 +881,76 @@
     (open ? menuClose : menuBtn).focus();
   }
 
+  // ---------- setting explanations (ⓘ popups) ----------
+  const INFO = {
+    grutiba: { t: "Grūtība", p: [
+      "Viegli — burts redzams kā pelēka ēna ar sākuma punktu un virziena bultiņām. Liela pielaide.",
+      "Vidēji — tieva ēna bez palīgzīmēm. Jāraksta precīzāk.",
+      "Grūti — ēnas nav! Noskaties animāciju un uzraksti burtu no galvas. Rakstīt var jebkurā vietā starp līnijām.",
+    ]},
+    burti: { t: "Burti", p: [
+      "ABC / abc — pārslēdz starp lielajiem un mazajiem burtiem.",
+      "Animācija — vai katram jaunam burtam automātiski parādīt, kā to raksta. Grūtajā līmenī animācija rādās vienmēr.",
+    ]},
+    izmers: { t: "Burtu izmērs", p: [
+      "Cik liels burts redzams uz ekrāna. Rakstīšanas līnijas pielāgojas izmēram.",
+    ]},
+    zimulis: { t: "Zīmulis", p: [
+      "Zīmuļa līnijas resnums.",
+      "↺ Auto — resnums pielāgojas burta ēnai automātiski.",
+      "Pavelc slīdni, lai iestatītu savu resnumu — tad Auto izslēdzas.",
+    ]},
+    ekrans: { t: "Ekrāns", p: [
+      "Izvēlies ekrāna režīmu.",
+      "E-tinte — augsts kontrasts, melns uz balta. Piemērots e-tintes (E-ink) planšetēm.",
+      "Krāsains — dzīvīgas krāsas parastiem (LED/OLED) ekrāniem.",
+    ]},
+  };
+  const infoPop   = document.getElementById("infoPop");
+  const infoTitle = document.getElementById("infoTitle");
+  const infoBody  = document.getElementById("infoBody");
+
+  function openInfo(key) {
+    const inf = INFO[key];
+    if (!inf) return;
+    infoTitle.textContent = inf.t;
+    infoBody.textContent = "";
+    for (const line of inf.p) {
+      const p = document.createElement("p");
+      p.textContent = line;
+      infoBody.appendChild(p);
+    }
+    infoPop.classList.add("show");
+  }
+  document.querySelectorAll(".infobtn").forEach(b => {
+    b.addEventListener("click", () => openInfo(b.dataset.info));
+  });
+  document.getElementById("infoClose").addEventListener("click", () => {
+    infoPop.classList.remove("show");
+  });
+  infoPop.addEventListener("click", (e) => {
+    if (e.target === infoPop) infoPop.classList.remove("show");
+  });
+
+  // ---------- display theme (E-ink vs colourful) ----------
+  // The inline <head> script already set data-theme before first paint;
+  // here we sync the toggle buttons and the canvas pen colour.
+  let theme = localStorage.getItem("lv_theme") === "color" ? "color" : "eink";
+  function applyTheme() {
+    if (theme === "color") document.documentElement.dataset.theme = "color";
+    else document.documentElement.removeAttribute("data-theme");
+    document.querySelectorAll("[data-theme-btn]").forEach(b =>
+      b.classList.toggle("active", b.dataset.themeBtn === theme));
+    applyInkColor();
+  }
+  document.querySelectorAll("[data-theme-btn]").forEach(b => {
+    b.addEventListener("click", () => {
+      theme = b.dataset.themeBtn === "color" ? "color" : "eink";
+      localStorage.setItem("lv_theme", theme);
+      applyTheme();
+    });
+  });
+
   // ---------- letter picker ----------
   const picker      = document.getElementById("picker");
   const pickerGrid  = document.getElementById("pickerGrid");
@@ -875,7 +986,6 @@
   function clearInk() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     coverage = coverage.map(() => new Set());
-    expected = 0;
     drewAnything = false;
     inkTotal = inkOk = inkLen = 0;
     inkStrokes = []; curStroke = null;
@@ -954,7 +1064,8 @@
 
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
-    if (pickerOpen) setPicker(false);      // picker sits above the drawer
+    if (infoPop.classList.contains("show")) infoPop.classList.remove("show");
+    else if (pickerOpen) setPicker(false); // picker sits above the drawer
     else if (menuOpen) setMenu(false);
   });
   const sizeRange = document.getElementById("sizeRange");
@@ -1008,6 +1119,7 @@
   layout();
   sizeRange.value = size;
   updateInkUI();
+  applyTheme();
   updateCaseBtn();
   setLevel(level);   // sets active button + loads first letter
   updateAnimBtn();

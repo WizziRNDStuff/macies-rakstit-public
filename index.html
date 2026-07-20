@@ -6,9 +6,17 @@
 <title>Mācāmies rakstīt burtus</title>
 <style>
   :root{
+    /* E-ink (default): high contrast, optimised for e-paper */
     --ink:#000; --paper:#fff; --faint:#c9c9c9; --guide:#9a9a9a;
     --ok:#0a7d24; --bad:#b00020;
+    --rule:#dcdcdc; --scrim:rgba(255,255,255,.82);
     --bw:3px; /* border width */
+  }
+  /* Colourful (LED/OLED): indigo chrome + pen, peach shadow to trace over */
+  :root[data-theme="color"]{
+    --ink:#3730a3; --paper:#f4f8ff; --faint:#ffca8a; --guide:#f59e0b;
+    --ok:#16a34a; --bad:#e11d48;
+    --rule:#c7d2fe; --scrim:rgba(244,248,255,.85);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;background:var(--paper);color:var(--ink);
@@ -60,13 +68,15 @@
   .guide-stroke{fill:none;stroke:var(--faint);stroke-width:9;
     stroke-linecap:round;stroke-linejoin:round;}
   /* writing ruling: the child writes the letter body between these */
-  .rule-line{stroke:#dcdcdc;stroke-width:.7;stroke-dasharray:3 2.6;}
-  .num{fill:var(--guide);font-weight:700;font-size:7px;}
-  .arrow{fill:var(--guide);}
+  .rule-line{stroke:var(--rule);stroke-width:.7;stroke-dasharray:3 2.6;}
+  /* start dots + direction chevrons on the Viegli shadow */
+  .startdot{fill:var(--guide);}
+  .dirarrow{fill:none;stroke:var(--guide);stroke-width:1.6;
+    stroke-linecap:round;stroke-linejoin:round;}
 
   /* success / retry overlays */
   #ok,#bad{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
-    background:rgba(255,255,255,.82);border-radius:inherit;z-index:5;}
+    background:var(--scrim);border-radius:inherit;z-index:5;}
   #ok.show,#bad.show{display:flex;}
   #ok svg,#bad svg{width:55%;height:55%;position:static;}
   .check{fill:none;stroke:var(--ok);stroke-width:10;stroke-linecap:round;stroke-linejoin:round;}
@@ -143,6 +153,31 @@
   #menu #sizeRange,#menu #inkRange{width:100%;}
   #menu .lbl{font-size:clamp(12px,2vmin,16px);font-weight:700;color:var(--guide);
     text-transform:uppercase;letter-spacing:.5px;}
+  /* ⓘ — setting explanation trigger */
+  .infobtn{width:clamp(18px,3vmin,24px);height:clamp(18px,3vmin,24px);
+    min-width:0;padding:0;flex:0 0 auto;border-radius:50%;
+    border:2px solid var(--guide);background:var(--paper);color:var(--guide);
+    font:italic 700 clamp(11px,1.9vmin,14px)/1 Georgia,serif;
+    display:inline-flex;align-items:center;justify-content:center;
+    cursor:pointer;touch-action:manipulation;}
+  .infobtn:active{background:var(--guide);color:var(--paper);}
+  /* explanation popup */
+  #infoPop{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);
+    display:none;align-items:center;justify-content:center;
+    padding:clamp(10px,4vmin,30px);}
+  #infoPop.show{display:flex;}
+  .info-card{background:var(--paper);border:var(--bw) solid var(--ink);
+    border-radius:clamp(10px,2vmin,18px);max-width:min(90vw,430px);
+    max-height:80vh;overflow-y:auto;touch-action:pan-y;
+    padding:clamp(12px,3vmin,22px);}
+  .info-card .ih{display:flex;align-items:center;gap:10px;
+    border-bottom:var(--bw) solid var(--ink);
+    padding-bottom:clamp(6px,1.5vmin,10px);margin-bottom:clamp(8px,2vmin,12px);}
+  .info-card .ih .t{font-size:clamp(16px,3.2vmin,22px);font-weight:800;
+    flex:1 1 auto;min-width:0;}
+  .info-card p{margin:0 0 clamp(8px,2vmin,12px);
+    font-size:clamp(14px,2.6vmin,18px);line-height:1.45;}
+  .info-card p:last-child{margin-bottom:0;}
   /* build version, pinned to the drawer's bottom; deploy.sh stamps APPV so
      this always shows which build is actually loaded (no ?debug needed) */
   #menu .ver{margin-top:auto;text-align:center;color:var(--guide);
@@ -216,6 +251,11 @@
     #actionbar{gap:8px;}
   }
 </style>
+<script>
+  /* set the theme before first paint so colourful users see no e-ink flash */
+  try { if (localStorage.getItem("lv_theme") === "color")
+          document.documentElement.dataset.theme = "color"; } catch (e) {}
+</script>
 </head>
 <body>
 <div id="app">
@@ -253,6 +293,16 @@
 
 </div>
 
+<div id="infoPop">
+  <div class="info-card">
+    <div class="ih">
+      <span class="t" id="infoTitle"></span>
+      <button class="iconbtn" id="infoClose" aria-label="Aizvērt">✕</button>
+    </div>
+    <div id="infoBody"></div>
+  </div>
+</div>
+
 <div id="picker" aria-labelledby="pickerTitle">
   <div class="picker-head">
     <button class="iconbtn" id="pickerClose" aria-label="Aizvērt">✕</button>
@@ -269,7 +319,7 @@
   </div>
   <div class="menu-body">
     <div class="grp">
-      <span class="lbl">Grūtība</span>
+      <div class="row"><span class="lbl">Grūtība</span><button class="infobtn" data-info="grutiba" aria-label="Skaidrojums">i</button></div>
       <div class="row">
         <button class="cbtn" data-level="1" id="lvl1">Viegli</button>
         <button class="cbtn" data-level="2" id="lvl2">Vidēji</button>
@@ -277,14 +327,14 @@
       </div>
     </div>
     <div class="grp">
-      <span class="lbl">Burti</span>
+      <div class="row"><span class="lbl">Burti</span><button class="infobtn" data-info="burti" aria-label="Skaidrojums">i</button></div>
       <div class="row">
         <button class="cbtn" id="caseToggle">ABC / abc</button>
         <button class="cbtn" id="animToggle">Animācija: IESL.</button>
       </div>
     </div>
     <div class="grp">
-      <span class="lbl">Burtu izmērs</span>
+      <div class="row"><span class="lbl">Burtu izmērs</span><button class="infobtn" data-info="izmers" aria-label="Skaidrojums">i</button></div>
       <div class="row">
         <!-- 100% = as large as the frame allows: descenders (Ģ, p, g, j) already
              reach y=99 of the 0..100 viewBox, so anything above ~102 clips. -->
@@ -294,7 +344,7 @@
     </div>
     <div class="grp">
       <div class="row">
-        <span class="lbl">Zīmulis</span>
+        <span class="lbl">Zīmulis</span><button class="infobtn" data-info="zimulis" aria-label="Skaidrojums">i</button>
         <button class="cbtn" id="inkAuto">↺ Auto</button>
       </div>
       <div class="row">
@@ -302,12 +352,21 @@
                aria-label="Zīmuļa resnums">
       </div>
     </div>
+    <div class="grp">
+      <div class="row">
+        <span class="lbl">Ekrāns</span><button class="infobtn" data-info="ekrans" aria-label="Skaidrojums">i</button>
+      </div>
+      <div class="row">
+        <button class="cbtn" data-theme-btn="eink">E-tinte</button>
+        <button class="cbtn" data-theme-btn="color">Krāsains</button>
+      </div>
+    </div>
     <div class="ver" id="appVer"></div>
   </div>
 </aside>
 
 <!-- ?v= busts stale caches on tablets; bump it when either file changes -->
-<script src="letters.js?v=e889945"></script>
-<script src="app.js?v=e889945"></script>
+<script src="letters.js?v=41e6100"></script>
+<script src="app.js?v=41e6100"></script>
 </body>
 </html>
