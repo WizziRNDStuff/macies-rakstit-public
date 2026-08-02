@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Zilbes</title>
+<title>Vārdi</title>
 <style>
   :root{
     --ink:#000; --paper:#fff; --guide:#9a9a9a; --bw:3px;
@@ -57,6 +57,9 @@
     stroke-linecap:round;stroke-linejoin:round;}
   .ptext{font-family:"Segoe UI",Arial,Helvetica,sans-serif;
     font-size:100px;font-weight:500;fill:var(--ink);}
+  /* Doman method: big red words, black border, no baseline */
+  #card.doman .glyph{stroke:#e11d48;stroke-width:4.2;}
+  #card.doman .ptext{fill:#e11d48;}
   .uline{fill:none;stroke:var(--accent);stroke-width:2.6;
     stroke-linecap:round;stroke-linejoin:round;}
   .udot{fill:var(--accent);}
@@ -137,7 +140,7 @@
   <header>
     <button class="iconbtn" id="menuBtn" aria-label="Izvēlne"
             aria-controls="menu" aria-expanded="false">☰</button>
-    <div class="title">Zilbes</div>
+    <div class="title">Vārdi</div>
     <div class="prog" id="prog">1 / 1</div>
   </header>
   <nav id="actionbar">
@@ -180,9 +183,15 @@
       </div>
     </div>
     <div>
-      <div class="row" style="align-items:center"><span class="lbl" style="flex:1 1 auto">Zilbes</span><button class="infobtn" data-info="nejausi" aria-label="Skaidrojums">i</button></div>
+      <div class="row" style="align-items:center"><span class="lbl" style="flex:1 1 auto">Vārdi</span><button class="infobtn" data-info="nejausi" aria-label="Skaidrojums">i</button></div>
       <div class="row" style="margin-top:8px">
         <button class="cbtn" id="randBtn" aria-pressed="false">🎲 Nejauši</button>
+      </div>
+    </div>
+    <div>
+      <div class="row" style="align-items:center"><span class="lbl" style="flex:1 1 auto">Domana princips</span><button class="infobtn" data-info="doman" aria-label="Skaidrojums">i</button></div>
+      <div class="row" style="margin-top:8px">
+        <button class="cbtn" id="domanBtn" aria-pressed="false">🔴 Domana princips</button>
       </div>
     </div>
     <div>
@@ -209,11 +218,8 @@
 (function () {
   var APPV = "9ffe470";
   var SVGNS = "http://www.w3.org/2000/svg";
-  var CONS = "b c č d f g ģ h j k ķ l ļ m n ņ p r s š t v z ž".split(" ");
-  var VOW  = "a ā e ē i ī o u ū".split(" ");
-  // syllables consonant-major, matching the reference list order
-  var SYL = [];
-  CONS.forEach(function (c) { VOW.forEach(function (v) { SYL.push(c + v); }); });
+  // Latvian words (uppercase), in the given order
+  var SYL = ["ACS","AITA","AKA","ALGA","ASTE","AUSS","BĀKA","BITE","BIZE","DESA","EGLE","EZIS","FEJA","GOVS","IELA","INDE","JAKA","JŪRA","KĀJA","KŪLA","LAPA","ĻIPA","MAMMA","MATI","MĀJA","MĀSA","MĒLE","MUTE","NAGI","OGLE","OLIS","OME","OTA","PELE","PĪLE","POGA","PUĶE","PUPA","PŪCE","PŪKA","RASA","RATI","RĪSI","ROKA","ROZE","SĒTA","SOMA","SULA","SUNS","TAKA","TĒJA","TĒTIS","UPE","VĀLE","VĪLE","ZĀLE","ZEME","ZĪLE","ZOBI","ZUPA"];
 
   // char -> entry for both handwriting cases (letters.js). Latvian letters
   // case-map correctly with toUpperCase/toLowerCase (standard Unicode pairs).
@@ -230,14 +236,14 @@
   var GAP = 7, PAD = 8, ULINE = 6;   // letter gap, viewbox pad, underline drop
   // fixed design canvas -> uniform card size; content is centred inside,
   // so a short item (e.g. "fo") sits normal-sized with margin, not zoomed.
-  var CANVAS_W = 150, CANVAS_H = 118;
+  var CANVAS_W = 330, CANVAS_H = 118;
 
   // display style: handwritten "upper" / "lower", or "print" (standard font,
   // shown in the list's natural case). Per-page key, remembered independently.
-  var mode = localStorage.getItem("lv_zil_case") || "lower";
-  if (["upper", "lower", "pupper", "plower"].indexOf(mode) < 0) mode = "lower";
+  var mode = localStorage.getItem("lv_var_case") || "upper";
+  if (["upper", "lower", "pupper", "plower"].indexOf(mode) < 0) mode = "upper";
 
-  var idx = parseInt(localStorage.getItem("lv_zil") || "0", 10);
+  var idx = parseInt(localStorage.getItem("lv_var") || "0", 10);
   if (!(idx >= 0 && idx < SYL.length)) idx = 0;
 
   function groupFor(ch, table) {
@@ -289,20 +295,22 @@
     }
     var uy = yBot + ULINE;
 
-    // directional underline: start dot (left) + line + arrowhead (right)
-    var dot = document.createElementNS(SVGNS, "circle");
-    dot.setAttribute("cx", 0); dot.setAttribute("cy", uy);
-    dot.setAttribute("r", 2.6); dot.setAttribute("class", "udot");
-    svg.appendChild(dot);
-    var ln = document.createElementNS(SVGNS, "path");
-    ln.setAttribute("d", "M0," + uy + " L" + totalW + "," + uy);
-    ln.setAttribute("class", "uline");
-    svg.appendChild(ln);
-    var ah = document.createElementNS(SVGNS, "path");
-    ah.setAttribute("d", "M" + (totalW - 6) + "," + (uy - 4) +
-                    " L" + totalW + "," + uy + " L" + (totalW - 6) + "," + (uy + 4));
-    ah.setAttribute("class", "uline");
-    svg.appendChild(ah);
+    // directional underline (hidden in Doman mode)
+    if (!domanOn) {
+        var dot = document.createElementNS(SVGNS, "circle");
+        dot.setAttribute("cx", 0); dot.setAttribute("cy", uy);
+        dot.setAttribute("r", 2.6); dot.setAttribute("class", "udot");
+        svg.appendChild(dot);
+        var ln = document.createElementNS(SVGNS, "path");
+        ln.setAttribute("d", "M0," + uy + " L" + totalW + "," + uy);
+        ln.setAttribute("class", "uline");
+        svg.appendChild(ln);
+        var ah = document.createElementNS(SVGNS, "path");
+        ah.setAttribute("d", "M" + (totalW - 6) + "," + (uy - 4) +
+                        " L" + totalW + "," + uy + " L" + (totalW - 6) + "," + (uy + 4));
+        ah.setAttribute("class", "uline");
+        svg.appendChild(ah);
+    }
 
     // uniform card: fixed canvas, expanded only if an item is wider than it
     // (aspect kept constant so every card renders the same size)
@@ -312,16 +320,18 @@
     var vbY = (yTop + uy) / 2 - vbH / 2;
     svg.setAttribute("viewBox", vbX + " " + vbY + " " + vbW + " " + vbH);
 
-    if (document.documentElement.dataset.theme === "color")
+    if (domanOn) card.style.setProperty("--accent", "#000");   // Doman: black border
+    else if (document.documentElement.dataset.theme === "color")
       card.style.setProperty("--accent", PALETTE[idx % PALETTE.length]);
     else card.style.removeProperty("--accent");
 
-    localStorage.setItem("lv_zil", String(idx));
+    localStorage.setItem("lv_var", String(idx));
   }
 
   // Nejauši is a MODE toggle: when on, Tālāk picks a random syllable.
   // A small history lets Atpakaļ return to what was actually shown.
-  var randOn = localStorage.getItem("lv_zil_rand") === "1";
+  var randOn = localStorage.getItem("lv_var_rand") === "1";
+  var domanOn = localStorage.getItem("lv_var_doman") === "1";
   var hist = [idx], hpos = 0;
 
   function show(i) { idx = i; render(); }
@@ -353,7 +363,7 @@
   function updateRandBtn() { randBtn.classList.toggle("active", randOn); }
   randBtn.addEventListener("click", function () {
     randOn = !randOn;
-    localStorage.setItem("lv_zil_rand", randOn ? "1" : "0");
+    localStorage.setItem("lv_var_rand", randOn ? "1" : "0");
     updateRandBtn();   // stays in the drawer so the on/off state is visible
   });
 
@@ -404,7 +414,7 @@
   document.querySelectorAll("[data-case]").forEach(function (b) {
     b.addEventListener("click", function () {
       mode = b.getAttribute("data-case");
-      localStorage.setItem("lv_zil_case", mode);
+      localStorage.setItem("lv_var_case", mode);
       updateCaseBtns();
       render();
     });
@@ -453,6 +463,9 @@
     ekrans: { t: "Ekrāns", p: [
       "E-tinte — augsts kontrasts (melns/balts) e-tintes planšetēm.",
       "Krāsains — dzīvīgas krāsas parastiem (LED/OLED) ekrāniem."] },
+    doman: { t: "Domana princips", p: [
+      "Lasīšanas metode maziem bērniem: liels vārds sarkanā krāsā uz balta.",
+      "Ieslēdz — burti kļūst sarkani, rāmis melns, svītra pazūd. Nospied vēlreiz, lai izslēgtu."] },
   };
   var infoPop = document.getElementById("infoPop");
   var infoTitle = document.getElementById("infoTitle");
@@ -476,9 +489,22 @@
     if (e.target === infoPop) infoPop.classList.remove("open");
   });
 
+  var domanBtn = document.getElementById("domanBtn");
+  function updateDomanBtn() {
+    domanBtn.classList.toggle("active", domanOn);
+    card.classList.toggle("doman", domanOn);
+  }
+  domanBtn.addEventListener("click", function () {
+    domanOn = !domanOn;
+    localStorage.setItem("lv_var_doman", domanOn ? "1" : "0");
+    updateDomanBtn();
+    render();
+  });
+
   document.getElementById("appVer").textContent = "Versija: " + APPV;
   updateRandBtn();
   updateCaseBtns();
+  updateDomanBtn();
   applySize();
   applyTheme();   // also does the first render
 })();
