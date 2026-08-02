@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Mācāmies rakstīt burtus</title>
+<style>
+  :root{
+    /* E-ink (default): high contrast, optimised for e-paper */
+    --ink:#000; --paper:#fff; --faint:#c9c9c9; --guide:#9a9a9a;
+    --ok:#0a7d24; --bad:#b00020;
+    --rule:#dcdcdc; --scrim:rgba(255,255,255,.82);
+    --bw:3px; /* border width */
+  }
+  /* Colourful (LED/OLED): indigo chrome + pen, peach shadow to trace over */
+  :root[data-theme="color"]{
+    --ink:#3730a3; --paper:#f4f8ff; --faint:#ffca8a; --guide:#f59e0b;
+    --ok:#16a34a; --bad:#e11d48;
+    --rule:#c7d2fe; --scrim:rgba(244,248,255,.85);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Segoe UI",Arial,Helvetica,sans-serif;overflow:hidden;
+    touch-action:none;user-select:none;-webkit-user-select:none;
+    -webkit-text-size-adjust:100%;}
+  /* dynamic viewport height handles mobile browser chrome; vh is fallback */
+  #app{display:flex;flex-direction:column;height:100vh;height:100dvh;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right)
+            env(safe-area-inset-bottom) env(safe-area-inset-left);}
+
+  header{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:clamp(6px,1.6vmin,14px) clamp(10px,2.5vw,22px);
+    border-bottom:var(--bw) solid var(--ink);flex:0 0 auto;}
+  /* min-width:0 lets the title ellipsize instead of shoving the star counter
+     off-screen — flex items refuse to shrink below content width without it */
+  header .title{font-size:clamp(15px,3.4vmin,24px);font-weight:700;
+    letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    flex:1 1 auto;min-width:0;}
+  /* the progress readout is the picker trigger — a real button, so it needs the
+     global button chrome stripped and a border to read as tappable */
+  header .progress{display:flex;align-items:center;gap:clamp(6px,1.5vw,14px);
+    font-size:clamp(14px,3vmin,22px);font-weight:700;white-space:nowrap;
+    font-variant-numeric:tabular-nums;flex:0 0 auto;min-width:0;
+    padding:clamp(3px,.8vmin,7px) clamp(6px,1.4vw,11px);
+    border:var(--bw) solid var(--ink);border-radius:clamp(8px,1.4vmin,12px);
+    background:var(--paper);color:var(--ink);cursor:pointer;
+    touch-action:manipulation;}
+
+  /* min-height:0 lets the flex child shrink so the square frame always fits.
+     container-type:size lets the frame size to the smaller stage dimension. */
+  #stage{flex:1 1 auto;min-height:0;display:flex;align-items:center;
+    justify-content:center;position:relative;padding:clamp(4px,1.5vmin,18px);
+    container-type:size;}
+  /* largest square that fits the stage in ANY aspect ratio (portrait too) */
+  #frame{position:relative;aspect-ratio:1/1;
+    width:min(100cqw,100cqh);height:auto;
+    border:var(--bw) solid var(--ink);border-radius:clamp(10px,2vmin,20px);
+    background:var(--paper);}
+  /* fallback for browsers without container query units */
+  @supports not (width:1cqmin){
+    #frame{width:min(100%,80vh);height:auto;}
+  }
+  svg,canvas{position:absolute;inset:0;width:100%;height:100%;
+    border-radius:inherit;}
+  canvas{touch-action:none;}
+
+  /* guide letter (SVG is viewBox-based, so it scales with the frame) */
+  .guide-stroke{fill:none;stroke:var(--faint);stroke-width:9;
+    stroke-linecap:round;stroke-linejoin:round;}
+  /* writing ruling: the child writes the letter body between these */
+  .rule-line{stroke:var(--rule);stroke-width:.7;stroke-dasharray:3 2.6;}
+  /* start dots + direction chevrons on the Viegli shadow */
+  .startdot{fill:var(--guide);}
+  .dirarrow{fill:none;stroke:var(--guide);stroke-width:1.6;
+    stroke-linecap:round;stroke-linejoin:round;}
+
+  /* success / retry overlays */
+  #ok,#bad{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    background:var(--scrim);border-radius:inherit;z-index:5;}
+  #ok.show,#bad.show{display:flex;}
+  #ok svg,#bad svg{width:55%;height:55%;position:static;}
+  .check{fill:none;stroke:var(--ok);stroke-width:10;stroke-linecap:round;stroke-linejoin:round;}
+  .cross{fill:none;stroke:var(--bad);stroke-width:10;stroke-linecap:round;}
+
+  /* action bar sits at the TOP: a wrist resting on the tablet's lower edge
+     while writing was hitting the buttons. One row always: buttons share the
+     width instead of forcing a min-width; nowrap so nothing ever wraps. */
+  #actionbar{display:flex;flex-wrap:nowrap;gap:clamp(6px,1.2vw,14px);
+    align-items:center;justify-content:center;
+    padding:clamp(8px,1.6vmin,14px) clamp(6px,1.5vw,18px);
+    border-bottom:var(--bw) solid var(--ink);flex:0 0 auto;}
+  #actionbar button{flex:1 1 0;min-width:0;white-space:nowrap;
+    font-size:clamp(13px,2.4vmin,20px);
+    padding:clamp(8px,1.4vmin,12px) clamp(4px,1vw,16px);}
+  button{font-size:clamp(15px,2.6vmin,22px);font-weight:700;
+    padding:clamp(8px,1.4vmin,12px) clamp(14px,3vw,26px);
+    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border-radius:clamp(9px,1.6vmin,14px);cursor:pointer;
+    min-width:clamp(84px,22vw,140px);touch-action:manipulation;}
+  button:active{background:var(--ink);color:var(--paper);}
+  /* current-letter preview, lives in the header next to the counter */
+  #letterName{font-size:clamp(20px,3.8vmin,28px);font-weight:800;
+    text-align:center;min-width:1.2em;flex:0 0 auto;}
+
+  /* hamburger / close icon buttons */
+  .iconbtn{font-size:clamp(18px,3.4vmin,26px);line-height:1;font-weight:700;
+    padding:clamp(4px,1vmin,8px) clamp(8px,1.6vw,12px);
+    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;
+    min-width:0;flex:0 0 auto;touch-action:manipulation;}
+  .iconbtn:active,.iconbtn.active{background:var(--ink);color:var(--paper);}
+
+  /* settings drawer — holds every option, so the frame keeps the screen */
+  #backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:15;
+    opacity:0;pointer-events:none;transition:opacity .22s ease;}
+  #backdrop.open{opacity:1;pointer-events:auto;}
+  /* opens from the left, under the ☰ it belongs to */
+  #menu{position:fixed;top:0;left:0;bottom:0;z-index:20;
+    width:min(88vw,340px);background:var(--paper);
+    border-right:var(--bw) solid var(--ink);
+    display:flex;flex-direction:column;
+    transform:translateX(-100%);visibility:hidden;
+    transition:transform .22s ease, visibility 0s linear .22s;}
+  /* visibility flips instantly on open, and only after the slide-out on close,
+     so the drawer's buttons are never tabbable while it is shut */
+  #menu.open{transform:translateX(0);visibility:visible;
+    transition:transform .22s ease, visibility 0s;}
+  @media (prefers-reduced-motion:reduce){
+    #menu,#backdrop{transition:none;}
+  }
+  /* ✕ sits first so it lands where ☰ was — the drawer covers the header, so
+     the same spot toggles open/closed */
+  .menu-head{display:flex;align-items:center;gap:clamp(8px,2vw,14px);
+    flex:0 0 auto;padding:clamp(8px,1.8vmin,14px) clamp(10px,2.5vw,18px);
+    padding-top:calc(clamp(8px,1.8vmin,14px) + env(safe-area-inset-top));
+    border-bottom:var(--bw) solid var(--ink);}
+  .menu-head .t{font-size:clamp(15px,3vmin,22px);font-weight:800;
+    flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;}
+  /* scrollable so the options still reach on a short landscape phone;
+     pan-y overrides the body's touch-action:none */
+  .menu-body{flex:1 1 auto;min-height:0;overflow-y:auto;touch-action:pan-y;
+    padding:clamp(10px,2.4vmin,18px);
+    padding-bottom:calc(clamp(10px,2.4vmin,18px) + env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;gap:clamp(14px,3vmin,22px);}
+  #menu .grp{display:flex;flex-direction:column;align-items:stretch;
+    gap:clamp(6px,1.4vmin,10px);}
+  #menu .row{display:flex;flex-wrap:wrap;gap:clamp(6px,1.4vw,10px);
+    align-items:center;}
+  /* min-width:0 drops the global button min-width, which would otherwise force
+     3x140px into a ~300px drawer and wrap every row */
+  #menu .row .cbtn{flex:1 1 auto;min-width:0;}
+  /* back to the activity menu */
+  #menu .homebtn{display:block;text-align:center;text-decoration:none;
+    font-size:clamp(14px,2.4vmin,19px);padding:clamp(8px,1.6vmin,12px);}
+  #menu #sizeRange,#menu #inkRange{width:100%;}
+  #menu .lbl{font-size:clamp(12px,2vmin,16px);font-weight:700;color:var(--guide);
+    text-transform:uppercase;letter-spacing:.5px;}
+  /* ⓘ — setting explanation trigger */
+  .infobtn{width:clamp(18px,3vmin,24px);height:clamp(18px,3vmin,24px);
+    min-width:0;padding:0;flex:0 0 auto;border-radius:50%;
+    border:2px solid var(--guide);background:var(--paper);color:var(--guide);
+    font:italic 700 clamp(11px,1.9vmin,14px)/1 Georgia,serif;
+    display:inline-flex;align-items:center;justify-content:center;
+    cursor:pointer;touch-action:manipulation;}
+  .infobtn:active{background:var(--guide);color:var(--paper);}
+  /* explanation popup */
+  #infoPop{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);
+    display:none;align-items:center;justify-content:center;
+    padding:clamp(10px,4vmin,30px);}
+  #infoPop.show{display:flex;}
+  .info-card{background:var(--paper);border:var(--bw) solid var(--ink);
+    border-radius:clamp(10px,2vmin,18px);max-width:min(90vw,430px);
+    max-height:80vh;overflow-y:auto;touch-action:pan-y;
+    padding:clamp(12px,3vmin,22px);}
+  .info-card .ih{display:flex;align-items:center;gap:10px;
+    border-bottom:var(--bw) solid var(--ink);
+    padding-bottom:clamp(6px,1.5vmin,10px);margin-bottom:clamp(8px,2vmin,12px);}
+  .info-card .ih .t{font-size:clamp(16px,3.2vmin,22px);font-weight:800;
+    flex:1 1 auto;min-width:0;}
+  .info-card p{margin:0 0 clamp(8px,2vmin,12px);
+    font-size:clamp(14px,2.6vmin,18px);line-height:1.45;}
+  .info-card p:last-child{margin-bottom:0;}
+  /* build version, pinned to the drawer's bottom; deploy.sh stamps APPV so
+     this always shows which build is actually loaded (no ?debug needed) */
+  #menu .ver{margin-top:auto;text-align:center;color:var(--guide);
+    font-size:clamp(11px,1.8vmin,14px);padding-top:clamp(8px,2vmin,14px);
+    font-variant-numeric:tabular-nums;}
+  .cbtn{font-size:clamp(13px,2.2vmin,18px);font-weight:700;
+    padding:clamp(5px,1vmin,9px) clamp(10px,2vw,18px);
+    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;touch-action:manipulation;}
+  .cbtn:active{background:var(--ink);color:var(--paper);}
+  .cbtn.active{background:var(--ink);color:var(--paper);}
+
+  /* letter-size slider. touch-action must be re-enabled: body sets
+     touch-action:none for the drawing canvas, which otherwise eats the drag. */
+  #sizeRange,#inkRange{-webkit-appearance:none;appearance:none;background:transparent;
+    touch-action:auto;cursor:pointer;width:clamp(84px,16vw,150px);
+    height:clamp(20px,3.4vmin,28px);margin:0;}
+  #sizeRange::-webkit-slider-runnable-track,#inkRange::-webkit-slider-runnable-track{height:var(--bw);
+    background:var(--ink);border-radius:2px;}
+  #sizeRange::-moz-range-track,#inkRange::-moz-range-track{height:var(--bw);background:var(--ink);
+    border-radius:2px;}
+  #sizeRange::-webkit-slider-thumb,#inkRange::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:clamp(18px,3.2vmin,26px);height:clamp(18px,3.2vmin,26px);
+    border-radius:50%;background:var(--paper);border:var(--bw) solid var(--ink);
+    margin-top:calc(var(--bw) / 2 - clamp(18px,3.2vmin,26px) / 2);}
+  #sizeRange::-moz-range-thumb,#inkRange::-moz-range-thumb{width:clamp(18px,3.2vmin,26px);
+    height:clamp(18px,3.2vmin,26px);border-radius:50%;background:var(--paper);
+    border:var(--bw) solid var(--ink);box-sizing:border-box;}
+
+  /* letter picker — full-screen grid of every letter, slides down from the top */
+  #picker{position:fixed;inset:0;z-index:25;background:var(--paper);
+    display:flex;flex-direction:column;
+    transform:translateY(-100%);visibility:hidden;
+    transition:transform .22s ease, visibility 0s linear .22s;}
+  #picker.open{transform:translateY(0);visibility:visible;
+    transition:transform .22s ease, visibility 0s;}
+  @media (prefers-reduced-motion:reduce){ #picker{transition:none;} }
+  .picker-head{display:flex;align-items:center;gap:clamp(8px,2vw,14px);
+    flex:0 0 auto;padding:clamp(8px,1.8vmin,14px) clamp(10px,2.5vw,18px);
+    padding-top:calc(clamp(8px,1.8vmin,14px) + env(safe-area-inset-top));
+    border-bottom:var(--bw) solid var(--ink);}
+  .picker-head .t{font-size:clamp(15px,3vmin,22px);font-weight:800;
+    flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;}
+  .picker-grid{flex:1 1 auto;min-height:0;overflow-y:auto;touch-action:pan-y;
+    padding:clamp(10px,2.4vmin,18px);
+    padding-bottom:calc(clamp(10px,2.4vmin,18px) + env(safe-area-inset-bottom));
+    display:grid;align-content:start;gap:clamp(7px,1.6vmin,12px);
+    grid-template-columns:repeat(auto-fill,minmax(clamp(54px,13vw,80px),1fr));}
+  /* min-width:0 drops the global button min-width, which would blow the grid up */
+  .pcell{position:relative;aspect-ratio:1/1;min-width:0;padding:0;
+    display:flex;align-items:center;justify-content:center;
+    border:var(--bw) solid var(--ink);border-radius:clamp(8px,1.6vmin,14px);
+    background:var(--paper);color:var(--ink);cursor:pointer;
+    touch-action:manipulation;}
+  .pcell .pch{font-size:clamp(19px,4.4vmin,32px);font-weight:800;line-height:1;}
+  .pcell.cur,.pcell:active{background:var(--ink);color:var(--paper);}
+
+  /* animation demo stroke overlay */
+  .demo-stroke{fill:none;stroke:var(--ink);stroke-width:9;
+    stroke-linecap:round;stroke-linejoin:round;opacity:.85;}
+  .demo-pen{fill:var(--ink);}
+
+  /* Narrow phones (portrait) */
+  @media (max-width:520px){
+    header .title{font-size:clamp(13px,4.4vw,18px);}
+  }
+  /* Short landscape (e.g. phone on its side): trim vertical padding */
+  @media (max-height:430px){
+    header,#actionbar{padding-top:4px;padding-bottom:4px;}
+    #actionbar{gap:8px;}
+  }
+</style>
+<script>
+  /* set the theme before first paint so colourful users see no e-ink flash */
+  try { if (localStorage.getItem("lv_theme") === "color")
+          document.documentElement.dataset.theme = "color"; } catch (e) {}
+</script>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button class="iconbtn" id="menuBtn" aria-label="Iestatījumi"
+            aria-controls="menu" aria-expanded="false">☰</button>
+    <div class="title">Mācāmies rakstīt burtus ✏️</div>
+    <div id="letterName"><span id="letterChar">A</span></div>
+    <button class="progress" id="gridBtn" aria-label="Visi burti"
+            aria-controls="picker" aria-expanded="false">
+      <span id="prog">1 / 33</span>
+    </button>
+  </header>
+
+  <nav id="actionbar">
+    <button id="prev">◀ Atpakaļ</button>
+    <button id="next">Tālāk ▶</button>
+    <button id="showDemo">Parādi</button>
+    <button id="clear">Dzēst</button>
+  </nav>
+
+
+  <div id="stage">
+    <div id="frame">
+      <svg id="guide" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
+      <canvas id="pad"></canvas>
+      <div id="ok">
+        <svg viewBox="0 0 100 100"><path class="check" d="M20,54 L44,76 L82,28"/></svg>
+      </div>
+      <div id="bad">
+        <svg viewBox="0 0 100 100"><path class="cross" d="M28,28 L72,72 M72,28 L28,72"/></svg>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="infoPop">
+  <div class="info-card">
+    <div class="ih">
+      <span class="t" id="infoTitle"></span>
+      <button class="iconbtn" id="infoClose" aria-label="Aizvērt">✕</button>
+    </div>
+    <div id="infoBody"></div>
+  </div>
+</div>
+
+<div id="picker" aria-labelledby="pickerTitle">
+  <div class="picker-head">
+    <button class="iconbtn" id="pickerClose" aria-label="Aizvērt">✕</button>
+    <span class="t" id="pickerTitle">Visi burti</span>
+  </div>
+  <div class="picker-grid" id="pickerGrid"></div>
+</div>
+
+<div id="backdrop"></div>
+<aside id="menu" aria-labelledby="menuTitle">
+  <div class="menu-head">
+    <button class="iconbtn" id="menuClose" aria-label="Aizvērt">✕</button>
+    <span class="t" id="menuTitle">Iestatījumi</span>
+  </div>
+  <div class="menu-body">
+    <a class="cbtn homebtn" href="index.html">🏠 Sākums</a>
+    <div class="grp">
+      <div class="row"><span class="lbl">Grūtība</span><button class="infobtn" data-info="grutiba" aria-label="Skaidrojums">i</button></div>
+      <div class="row">
+        <button class="cbtn" data-level="1" id="lvl1">Viegli</button>
+        <button class="cbtn" data-level="2" id="lvl2">Vidēji</button>
+        <button class="cbtn" data-level="3" id="lvl3">Grūti</button>
+      </div>
+    </div>
+    <div class="grp">
+      <div class="row"><span class="lbl">Burti</span><button class="infobtn" data-info="burti" aria-label="Skaidrojums">i</button></div>
+      <div class="row">
+        <button class="cbtn" id="caseToggle">ABC / abc</button>
+        <button class="cbtn" id="animToggle">Animācija: IESL.</button>
+      </div>
+    </div>
+    <div class="grp">
+      <div class="row"><span class="lbl">Burtu izmērs</span><button class="infobtn" data-info="izmers" aria-label="Skaidrojums">i</button></div>
+      <div class="row">
+        <!-- 100% = as large as the frame allows: descenders (Ģ, p, g, j) already
+             reach y=99 of the 0..100 viewBox, so anything above ~102 clips. -->
+        <input type="range" id="sizeRange" min="55" max="100" step="5" value="100"
+               aria-label="Burta izmērs">
+      </div>
+    </div>
+    <div class="grp">
+      <div class="row">
+        <span class="lbl">Zīmulis</span><button class="infobtn" data-info="zimulis" aria-label="Skaidrojums">i</button>
+        <button class="cbtn" id="inkAuto">↺ Auto</button>
+      </div>
+      <div class="row">
+        <input type="range" id="inkRange" min="6" max="37" step="1" value="12"
+               aria-label="Zīmuļa resnums">
+      </div>
+    </div>
+    <div class="grp">
+      <div class="row">
+        <span class="lbl">Ekrāns</span><button class="infobtn" data-info="ekrans" aria-label="Skaidrojums">i</button>
+      </div>
+      <div class="row">
+        <button class="cbtn" data-theme-btn="eink">E-tinte</button>
+        <button class="cbtn" data-theme-btn="color">Krāsains</button>
+      </div>
+    </div>
+    <div class="ver" id="appVer"></div>
+  </div>
+</aside>
+
+<!-- ?v= busts stale caches on tablets; bump it when either file changes -->
+<script src="letters.js?v=7ab8c11"></script>
+<script src="app.js?v=7ab8c11"></script>
+</body>
+</html>
