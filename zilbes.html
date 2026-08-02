@@ -129,7 +129,7 @@
     <div>
       <span class="lbl">Zilbes</span>
       <div class="row" style="margin-top:8px">
-        <button class="cbtn" id="randBtn">🎲 Nejauši</button>
+        <button class="cbtn" id="randBtn" aria-pressed="false">🎲 Nejauši</button>
       </div>
     </div>
     <div>
@@ -143,11 +143,11 @@
   </div>
 </aside>
 
-<script src="letters.js?v=7ab8c11"></script>
+<script src="letters.js?v=c4184f4"></script>
 <script>
 "use strict";
 (function () {
-  var APPV = "7ab8c11";
+  var APPV = "c4184f4";
   var SVGNS = "http://www.w3.org/2000/svg";
   var CONS = "b c č d f g ģ h j k ķ l ļ m n ņ p r s š t v z ž".split(" ");
   var VOW  = "a ā e ē i ī o u ū".split(" ");
@@ -229,14 +229,42 @@
     localStorage.setItem("lv_zil", String(idx));
   }
 
-  function go(n) { idx = (n + SYL.length) % SYL.length; render(); }
+  // Nejauši is a MODE toggle: when on, Tālāk picks a random syllable.
+  // A small history lets Atpakaļ return to what was actually shown.
+  var randOn = localStorage.getItem("lv_zil_rand") === "1";
+  var hist = [idx], hpos = 0;
 
-  document.getElementById("prev").addEventListener("click", function () { go(idx - 1); });
-  document.getElementById("next").addEventListener("click", function () { go(idx + 1); });
-  document.getElementById("randBtn").addEventListener("click", function () {
+  function show(i) { idx = i; render(); }
+  function randomOther() {
+    if (SYL.length < 2) return idx;
     var n = idx;
-    while (n === idx && SYL.length > 1) n = Math.floor(Math.random() * SYL.length);
-    setMenu(false); go(n);
+    while (n === idx) n = Math.floor(Math.random() * SYL.length);
+    return n;
+  }
+  function next() {
+    if (hpos < hist.length - 1) { hpos++; show(hist[hpos]); return; }  // forward in history
+    var n = randOn ? randomOther() : (idx + 1) % SYL.length;
+    hist.push(n);
+    if (hist.length > 400) hist.shift();   // bound the session history
+    hpos = hist.length - 1;
+    show(n);
+  }
+  function prev() {
+    if (hpos > 0) { hpos--; show(hist[hpos]); return; }               // back through history
+    var n = randOn ? randomOther() : (idx - 1 + SYL.length) % SYL.length;
+    hist.unshift(n); hpos = 0;
+    show(n);
+  }
+
+  document.getElementById("prev").addEventListener("click", prev);
+  document.getElementById("next").addEventListener("click", next);
+
+  var randBtn = document.getElementById("randBtn");
+  function updateRandBtn() { randBtn.classList.toggle("active", randOn); }
+  randBtn.addEventListener("click", function () {
+    randOn = !randOn;
+    localStorage.setItem("lv_zil_rand", randOn ? "1" : "0");
+    updateRandBtn();   // stays in the drawer so the on/off state is visible
   });
 
   // drawer
@@ -256,8 +284,8 @@
   backdrop.addEventListener("click", function () { setMenu(false); });
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && menuOpen) setMenu(false);
-    else if (e.key === "ArrowRight") go(idx + 1);
-    else if (e.key === "ArrowLeft") go(idx - 1);
+    else if (e.key === "ArrowRight") next();
+    else if (e.key === "ArrowLeft") prev();
   });
 
   // theme toggle (shared lv_theme; re-render to recolour the accent)
@@ -278,6 +306,7 @@
   });
 
   document.getElementById("appVer").textContent = "Versija: " + APPV;
+  updateRandBtn();
   applyTheme();   // also does the first render
 })();
 </script>
