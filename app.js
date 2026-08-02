@@ -1,6 +1,6 @@
 "use strict";
 (function () {
-  var APPV = "9ffe470";   // keep in lockstep with the ?v= cache-buster in index.html
+  var APPV = "ac8261d";   // keep in lockstep with the ?v= cache-buster in index.html
   const guideSvg = document.getElementById("guide");
   const canvas   = document.getElementById("pad");
   const ctx      = canvas.getContext("2d", { willReadFrequently: false });
@@ -34,7 +34,7 @@
 
   // ---------- letter transform ----------
   // Letters render upright (no slant). The size slider scales about the centre.
-  let size = parseInt(localStorage.getItem("lv_size") || "100", 10);
+  let size = parseInt(localStorage.getItem("lv_size") || "55", 10);   // default: small
   if (!(size >= 55 && size <= 100)) size = 100;   // 100 = frame-filling; see index.html
 
   let M = null;   // current local->display matrix; rebuilt by loadLetter

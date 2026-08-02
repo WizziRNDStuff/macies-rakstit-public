@@ -212,11 +212,11 @@
   </div>
 </div>
 
-<script src="letters.js?v=9ffe470"></script>
+<script src="letters.js?v=ac8261d"></script>
 <script>
 "use strict";
 (function () {
-  var APPV = "9ffe470";
+  var APPV = "ac8261d";
   var SVGNS = "http://www.w3.org/2000/svg";
   // Latvian words (uppercase), in the given order
   var SYL = ["ACS","AITA","AKA","ALGA","ASTE","AUSS","BĀKA","BITE","BIZE","DESA","EGLE","EZIS","FEJA","GOVS","IELA","INDE","JAKA","JŪRA","KĀJA","KŪLA","LAPA","ĻIPA","MAMMA","MATI","MĀJA","MĀSA","MĒLE","MUTE","NAGI","OGLE","OLIS","OME","OTA","PELE","PĪLE","POGA","PUĶE","PUPA","PŪCE","PŪKA","RASA","RATI","RĪSI","ROKA","ROZE","SĒTA","SOMA","SULA","SUNS","TAKA","TĒJA","TĒTIS","UPE","VĀLE","VĪLE","ZĀLE","ZEME","ZĪLE","ZOBI","ZUPA"];
@@ -240,8 +240,8 @@
 
   // display style: handwritten "upper" / "lower", or "print" (standard font,
   // shown in the list's natural case). Per-page key, remembered independently.
-  var mode = localStorage.getItem("lv_var_case") || "upper";
-  if (["upper", "lower", "pupper", "plower"].indexOf(mode) < 0) mode = "upper";
+  var mode = localStorage.getItem("lv_var_case") || "pupper";
+  if (["upper", "lower", "pupper", "plower"].indexOf(mode) < 0) mode = "pupper";
 
   var idx = parseInt(localStorage.getItem("lv_var") || "0", 10);
   if (!(idx >= 0 && idx < SYL.length)) idx = 0;

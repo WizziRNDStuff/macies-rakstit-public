@@ -203,11 +203,11 @@
   </div>
 </div>
 
-<script src="letters.js?v=9ffe470"></script>
+<script src="letters.js?v=ac8261d"></script>
 <script>
 "use strict";
 (function () {
-  var APPV = "9ffe470";
+  var APPV = "ac8261d";
   var SVGNS = "http://www.w3.org/2000/svg";
   var CONS = "b c č d f g ģ h j k ķ l ļ m n ņ p r s š t v z ž".split(" ");
   var VOW  = "a ā e ē i ī o u ū".split(" ");
@@ -234,8 +234,8 @@
 
   // display style: handwritten "upper" / "lower", or "print" (standard font,
   // shown in the list's natural case). Per-page key, remembered independently.
-  var mode = localStorage.getItem("lv_zil_case") || "lower";
-  if (["upper", "lower", "pupper", "plower"].indexOf(mode) < 0) mode = "lower";
+  var mode = localStorage.getItem("lv_zil_case") || "pupper";
+  if (["upper", "lower", "pupper", "plower"].indexOf(mode) < 0) mode = "pupper";
 
   var idx = parseInt(localStorage.getItem("lv_zil") || "0", 10);
   if (!(idx >= 0 && idx < SYL.length)) idx = 0;
