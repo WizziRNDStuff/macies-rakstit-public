@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Saskaitīšana</title>
+<style>
+  :root{ --ink:#000; --paper:#fff; --guide:#9a9a9a; --ok:#0a7d24; --bad:#b00020; --bw:3px; }
+  :root[data-theme="color"]{ --ink:#3730a3; --paper:#f4f8ff; --guide:#f59e0b; --ok:#16a34a; --bad:#e11d48; }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Segoe UI",Arial,Helvetica,sans-serif;overflow:hidden;
+    touch-action:none;user-select:none;-webkit-user-select:none;-webkit-text-size-adjust:100%;}
+  #app{display:flex;flex-direction:column;height:100vh;height:100dvh;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right)
+            env(safe-area-inset-bottom) env(safe-area-inset-left);}
+
+  header{display:flex;align-items:center;gap:clamp(8px,2vw,14px);
+    padding:clamp(6px,1.6vmin,14px) clamp(10px,2.5vw,22px);
+    border-bottom:var(--bw) solid var(--ink);flex:0 0 auto;}
+  header .title{font-size:clamp(16px,3.4vmin,24px);font-weight:800;
+    flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  header .score{font-size:clamp(14px,2.8vmin,20px);font-weight:700;white-space:nowrap;
+    font-variant-numeric:tabular-nums;flex:0 0 auto;}
+  .iconbtn{font-size:clamp(18px,3.4vmin,26px);line-height:1;font-weight:700;
+    padding:clamp(4px,1vmin,8px) clamp(8px,1.6vw,12px);
+    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;flex:0 0 auto;touch-action:manipulation;}
+  .iconbtn:active,.iconbtn.active{background:var(--ink);color:var(--paper);}
+
+  /* equation */
+  #stage{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;
+    position:relative;padding:clamp(10px,3vmin,28px);}
+  #eq{display:flex;align-items:center;justify-content:center;gap:clamp(8px,2.5vw,26px);
+    font-weight:800;font-size:clamp(48px,16vmin,150px);line-height:1;
+    font-variant-numeric:tabular-nums;}
+  #ans{min-width:1.1em;text-align:center;border-bottom:clamp(4px,1vmin,8px) solid var(--guide);
+    color:var(--guide);}
+  #ans.good{color:var(--ok);border-color:var(--ok);}
+  #ans.bad{color:var(--bad);border-color:var(--bad);}
+  /* success / retry tick */
+  #fx{position:absolute;top:clamp(6px,2vmin,16px);right:clamp(10px,3vw,26px);
+    font-size:clamp(30px,7vmin,60px);line-height:1;opacity:0;transition:opacity .15s;}
+  #fx.show{opacity:1;}
+  #fx.good{color:var(--ok);} #fx.bad{color:var(--bad);}
+
+  /* number pad 1..10 */
+  #pad{flex:0 0 auto;border-top:var(--bw) solid var(--ink);
+    padding:clamp(8px,1.8vmin,16px) clamp(8px,2vw,18px);
+    display:grid;gap:clamp(6px,1.4vw,12px);
+    grid-template-columns:repeat(5,1fr);}
+  @media (min-width:620px){ #pad{grid-template-columns:repeat(10,1fr);} }
+  .num{font-size:clamp(20px,4.4vmin,34px);font-weight:800;font-variant-numeric:tabular-nums;
+    padding:clamp(10px,2vmin,18px) 0;border:var(--bw) solid var(--ink);
+    background:var(--paper);color:var(--ink);border-radius:clamp(9px,1.6vmin,14px);
+    cursor:pointer;touch-action:manipulation;}
+  .num:active{background:var(--ink);color:var(--paper);}
+  .num.wrong{background:var(--bad);border-color:var(--bad);color:var(--paper);}
+  .num.right{background:var(--ok);border-color:var(--ok);color:var(--paper);}
+
+  /* drawer */
+  #backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:15;
+    opacity:0;pointer-events:none;transition:opacity .22s ease;}
+  #backdrop.open{opacity:1;pointer-events:auto;}
+  #menu{position:fixed;top:0;left:0;bottom:0;z-index:20;width:min(88vw,340px);
+    background:var(--paper);border-right:var(--bw) solid var(--ink);
+    display:flex;flex-direction:column;transform:translateX(-100%);visibility:hidden;
+    transition:transform .22s ease, visibility 0s linear .22s;}
+  #menu.open{transform:translateX(0);visibility:visible;transition:transform .22s ease, visibility 0s;}
+  @media (prefers-reduced-motion:reduce){ #menu,#backdrop{transition:none;} }
+  .menu-head{display:flex;align-items:center;gap:clamp(8px,2vw,14px);flex:0 0 auto;
+    padding:clamp(8px,1.8vmin,14px) clamp(10px,2.5vw,18px);
+    padding-top:calc(clamp(8px,1.8vmin,14px) + env(safe-area-inset-top));
+    border-bottom:var(--bw) solid var(--ink);}
+  .menu-head .t{font-size:clamp(15px,3vmin,22px);font-weight:800;flex:1 1 auto;min-width:0;}
+  .menu-body{flex:1 1 auto;min-height:0;overflow-y:auto;touch-action:pan-y;
+    padding:clamp(10px,2.4vmin,18px);
+    padding-bottom:calc(clamp(10px,2.4vmin,18px) + env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;gap:clamp(12px,2.6vmin,18px);}
+  .cbtn{font-size:clamp(14px,2.4vmin,19px);font-weight:700;text-align:center;text-decoration:none;
+    padding:clamp(9px,1.8vmin,13px) clamp(10px,2vw,16px);border:var(--bw) solid var(--ink);
+    background:var(--paper);color:var(--ink);border-radius:clamp(9px,1.6vmin,13px);
+    cursor:pointer;touch-action:manipulation;display:block;}
+  .cbtn:active,.cbtn.active{background:var(--ink);color:var(--paper);}
+  .lbl{font-size:clamp(12px,2vmin,16px);font-weight:700;color:var(--guide);
+    text-transform:uppercase;letter-spacing:.5px;}
+  .row{display:flex;gap:clamp(6px,1.4vw,10px);}
+  .row .cbtn{flex:1 1 0;min-width:0;}
+  .ver{margin-top:auto;text-align:center;color:var(--guide);font-size:clamp(11px,1.8vmin,14px);
+    padding-top:clamp(8px,2vmin,14px);font-variant-numeric:tabular-nums;}
+</style>
+<script>
+  try { if (localStorage.getItem("lv_theme") === "color")
+          document.documentElement.dataset.theme = "color"; } catch (e) {}
+</script>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button class="iconbtn" id="menuBtn" aria-label="Izvēlne" aria-controls="menu" aria-expanded="false">☰</button>
+    <div class="title">Saskaitīšana</div>
+    <div class="score" id="score">✓ 0</div>
+  </header>
+  <div id="stage">
+    <div id="eq">
+      <span id="a">0</span><span id="op">+</span><span id="b">0</span>
+      <span>=</span><span id="ans">?</span>
+    </div>
+    <div id="fx"></div>
+  </div>
+  <div id="pad"></div>
+</div>
+
+<div id="backdrop"></div>
+<aside id="menu" aria-labelledby="menuTitle">
+  <div class="menu-head">
+    <button class="iconbtn" id="menuClose" aria-label="Aizvērt">✕</button>
+    <span class="t" id="menuTitle">Izvēlne</span>
+  </div>
+  <div class="menu-body">
+    <a class="cbtn" href="index.html">🏠 Sākums</a>
+    <div>
+      <span class="lbl">Ekrāns</span>
+      <div class="row" style="margin-top:8px">
+        <button class="cbtn" data-theme-btn="eink">E-tinte</button>
+        <button class="cbtn" data-theme-btn="color">Krāsains</button>
+      </div>
+    </div>
+    <div class="ver" id="appVer"></div>
+  </div>
+</aside>
+
+<script>
+"use strict";
+(function () {
+  var APPV = "bda2bd6";
+  var OP = "add";   // "add" or "sub"
+  var aEl = document.getElementById("a"), bEl = document.getElementById("b");
+  var ansEl = document.getElementById("ans"), fxEl = document.getElementById("fx");
+  var pad = document.getElementById("pad"), scoreEl = document.getElementById("score");
+  var ans = 0, busy = false, correct = 0, lastKey = "";
+
+  function rnd(n) { return Math.floor(Math.random() * n); }   // 0..n-1
+
+  function newProblem() {
+    var a, b, key, guard = 0;
+    do {
+      if (OP === "add") {          // a,b >= 1, sum <= 10
+        a = 1 + rnd(8);            // 1..8
+        b = 1 + rnd(10 - a);       // 1..(10-a)  -> a+b in 2..10
+        ans = a + b;
+      } else {                      // subtraction, a<=10, result 1..a-1
+        a = 2 + rnd(9);            // 2..10
+        b = 1 + rnd(a - 1);        // 1..a-1     -> result 1..9
+        ans = a - b;
+      }
+      key = a + "_" + b;
+    } while (key === lastKey && ++guard < 8);   // avoid immediate repeat
+    lastKey = key;
+    aEl.textContent = a; bEl.textContent = b;
+    ansEl.textContent = "?"; ansEl.className = "";
+    busy = false;
+  }
+
+  function flash(el, cls, ms) {
+    el.classList.add(cls);
+    setTimeout(function () { el.classList.remove(cls); }, ms);
+  }
+
+  function answer(n, btn) {
+    if (busy) return;
+    if (n === ans) {
+      busy = true;
+      correct++; scoreEl.textContent = "✓ " + correct;
+      ansEl.textContent = n; ansEl.className = "good";
+      btn.classList.add("right");
+      fxEl.textContent = "✓"; fxEl.className = "show good";
+      beep(660);
+      setTimeout(function () {
+        btn.classList.remove("right");
+        fxEl.className = "";
+        newProblem();
+      }, 900);
+    } else {
+      // wrong: flash the tapped key red, brief buzz, let the child retry
+      flash(btn, "wrong", 500);
+      flash(ansEl, "bad", 400);
+      fxEl.textContent = "✗"; fxEl.className = "show bad";
+      setTimeout(function () { fxEl.className = ""; }, 500);
+      beep(150);
+    }
+  }
+
+  // number pad 1..10
+  for (var i = 1; i <= 10; i++) {
+    (function (n) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "num"; b.textContent = n;
+      b.addEventListener("click", function () { answer(n, b); });
+      pad.appendChild(b);
+    })(i);
+  }
+
+  // tiny sound
+  var actx = null;
+  function beep(freq) {
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      var o = actx.createOscillator(), g = actx.createGain();
+      o.connect(g); g.connect(actx.destination);
+      o.type = "sine"; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.001, actx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.25, actx.currentTime + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.4);
+      o.start(); o.stop(actx.currentTime + 0.42);
+    } catch (e) {}
+  }
+
+  // drawer
+  var menu = document.getElementById("menu"), backdrop = document.getElementById("backdrop");
+  var menuBtn = document.getElementById("menuBtn"), menuOpen = false;
+  function setMenu(open) {
+    menuOpen = open;
+    menu.classList.toggle("open", open);
+    backdrop.classList.toggle("open", open);
+    menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    menuBtn.classList.toggle("active", open);
+  }
+  menuBtn.addEventListener("click", function () { setMenu(!menuOpen); });
+  document.getElementById("menuClose").addEventListener("click", function () { setMenu(false); });
+  backdrop.addEventListener("click", function () { setMenu(false); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && menuOpen) setMenu(false);
+    else if (e.key >= "1" && e.key <= "9") {
+      var b = pad.children[parseInt(e.key, 10) - 1]; if (b) b.click();
+    } else if (e.key === "0") { var t = pad.children[9]; if (t) t.click(); }  // 0 -> 10
+  });
+
+  // theme
+  function applyTheme() {
+    var color = localStorage.getItem("lv_theme") === "color";
+    if (color) document.documentElement.dataset.theme = "color";
+    else document.documentElement.removeAttribute("data-theme");
+    document.querySelectorAll("[data-theme-btn]").forEach(function (b) {
+      b.classList.toggle("active", (b.dataset.themeBtn === "color") === color);
+    });
+  }
+  document.querySelectorAll("[data-theme-btn]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      localStorage.setItem("lv_theme", b.dataset.themeBtn === "color" ? "color" : "eink");
+      applyTheme();
+    });
+  });
+
+  document.getElementById("appVer").textContent = "Versija: " + APPV;
+  applyTheme();
+  newProblem();
+})();
+</script>
+</body>
+</html>
