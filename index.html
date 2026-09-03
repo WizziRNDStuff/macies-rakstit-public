@@ -76,6 +76,34 @@
     font-size:clamp(11px,1.8vmin,14px);
     padding:0 clamp(10px,2.5vw,22px) clamp(10px,2.5vmin,18px);
     font-variant-numeric:tabular-nums;}
+
+  /* changelog popup */
+  #logPop{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);
+    display:none;align-items:center;justify-content:center;
+    padding:clamp(10px,4vmin,30px);}
+  #logPop.show{display:flex;}
+  .log-card{background:var(--paper);border:var(--bw) solid var(--ink);
+    border-radius:clamp(10px,2vmin,18px);max-width:min(94vw,520px);width:100%;
+    max-height:84vh;display:flex;flex-direction:column;}
+  .log-head{display:flex;align-items:center;gap:10px;flex:0 0 auto;
+    border-bottom:var(--bw) solid var(--ink);
+    padding:clamp(10px,2.4vmin,16px) clamp(12px,3vw,20px);}
+  .log-head .t{font-size:clamp(17px,3.4vmin,24px);font-weight:800;
+    flex:1 1 auto;min-width:0;}
+  .log-body{overflow-y:auto;touch-action:pan-y;padding:clamp(12px,3vmin,20px);
+    display:flex;flex-direction:column;gap:clamp(14px,3vmin,22px);}
+  .log-group .gh{display:flex;align-items:center;gap:8px;
+    margin:0 0 clamp(6px,1.4vmin,10px);}
+  .log-group .gh .d{font-size:clamp(14px,2.6vmin,18px);font-weight:800;}
+  .log-group .badge2{font-size:clamp(10px,1.7vmin,13px);font-weight:800;
+    color:var(--paper);background:var(--ink);border-radius:999px;
+    padding:2px 9px;text-transform:uppercase;letter-spacing:.4px;}
+  .log-group ul{margin:0;padding:0;list-style:none;
+    display:flex;flex-direction:column;gap:clamp(6px,1.4vmin,10px);}
+  .log-group li{font-size:clamp(13px,2.5vmin,17px);line-height:1.4;}
+  .log-foot{flex:0 0 auto;border-top:var(--bw) solid var(--ink);text-align:center;
+    color:var(--guide);font-size:clamp(11px,1.8vmin,14px);
+    padding:clamp(8px,2vmin,12px);font-variant-numeric:tabular-nums;}
 </style>
 <script>
   /* set the theme before first paint so colourful users see no e-ink flash */
@@ -87,6 +115,7 @@
 <div id="app">
   <header>
     <div class="title">Mācāmies! ✏️</div>
+    <button class="iconbtn" id="logBtn" aria-label="Jaunumi" title="Jaunumi">🆕</button>
     <button class="iconbtn" id="themeBtn" aria-label="Ekrāna režīms">◐</button>
   </header>
 
@@ -121,7 +150,18 @@
     </a>
   </main>
 
-  <div class="ver">Versija: 651872a</div>
+  <div class="ver">Versija: 44610fe</div>
+</div>
+
+<div id="logPop" role="dialog" aria-modal="true" aria-labelledby="logTitle">
+  <div class="log-card">
+    <div class="log-head">
+      <span class="t" id="logTitle">Jaunumi 🆕</span>
+      <button class="iconbtn" id="logClose" aria-label="Aizvērt">✕</button>
+    </div>
+    <div class="log-body" id="logBody"></div>
+    <div class="log-foot">Versija: 44610fe</div>
+  </div>
 </div>
 
 <script>
@@ -134,6 +174,67 @@
     if (color) document.documentElement.dataset.theme = "color";
     else document.documentElement.removeAttribute("data-theme");
     try { localStorage.setItem("lv_theme", color ? "color" : "eink"); } catch (e) {}
+  });
+
+  // ---------- changelog / "Jaunumi" ----------
+  // Newest first. When you ship something notable, add a line to the top group
+  // (or a new group). Kept here so the home screen is the single source.
+  var CHANGELOG = [
+    { date: "Septembris 2026", items: [
+      "🎨 Jauns: Zīmēt — brīvi zīmē ar pildspalvu, flomāsteru, zīmuli vai otu; maini krāsu un līnijas resnumu, dzēs ar dzēšgumiju.",
+      "🔢 Jauns: Raksti ciparus — mācies rakstīt ciparus 0–9 tavā paša rokrakstā.",
+      "✍️ Jauns: Saskaitīšanā un Atņemšanā atbildi tagad var arī uzrakstīt ar roku — Izvēlne → Atbilde → Rakstīt.",
+    ]},
+    { date: "Augusts 2026", items: [
+      "➕ ➖ Jauns: Saskaitīšana un Atņemšana līdz 10 ar ciparu rindu.",
+      "🔤 Jauns: Zilbes un Vārdi — lasīšanas kartītes no tava rokraksta.",
+      "🔠 Vārdos un Zilbēs: rakstītie/drukātie, lielie/mazie burti, Domana princips un izmēra slīdnis.",
+    ]},
+    { date: "Jūlijs 2026", items: [
+      "✏️ Sākums: Raksti burtus — visi latviešu burti tavā rokrakstā.",
+      "⚙️ Grūtības līmeņi (Viegli · Vidēji · Grūti), burtu izmēra un zīmuļa iestatījumi.",
+      "◐ E-tintes un krāsainais ekrāna režīms.",
+    ]},
+  ];
+
+  var logPop   = document.getElementById("logPop");
+  var logBody  = document.getElementById("logBody");
+  var logBtn   = document.getElementById("logBtn");
+  var logClose = document.getElementById("logClose");
+
+  function renderLog() {
+    logBody.innerHTML = "";
+    CHANGELOG.forEach(function (g, gi) {
+      var wrap = document.createElement("div");
+      wrap.className = "log-group";
+      var gh = document.createElement("div");
+      gh.className = "gh";
+      var d = document.createElement("span");
+      d.className = "d"; d.textContent = g.date;
+      gh.appendChild(d);
+      if (gi === 0) {
+        var bd = document.createElement("span");
+        bd.className = "badge2"; bd.textContent = "Jaunākais";
+        gh.appendChild(bd);
+      }
+      wrap.appendChild(gh);
+      var ul = document.createElement("ul");
+      g.items.forEach(function (it) {
+        var li = document.createElement("li");
+        li.textContent = it;
+        ul.appendChild(li);
+      });
+      wrap.appendChild(ul);
+      logBody.appendChild(wrap);
+    });
+  }
+  function openLog(open) { logPop.classList.toggle("show", open); }
+
+  logBtn.addEventListener("click", function () { renderLog(); openLog(true); });
+  logClose.addEventListener("click", function () { openLog(false); });
+  logPop.addEventListener("click", function (e) { if (e.target === logPop) openLog(false); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") openLog(false);
   });
 })();
 </script>

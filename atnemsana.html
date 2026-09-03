@@ -88,6 +88,25 @@
   .row .cbtn{flex:1 1 0;min-width:0;}
   .ver{margin-top:auto;text-align:center;color:var(--guide);font-size:clamp(11px,1.8vmin,14px);
     padding-top:clamp(8px,2vmin,14px);font-variant-numeric:tabular-nums;}
+
+  /* write-the-answer pad (handwritten, recognised against the expected number) */
+  [hidden]{display:none!important;}
+  #writepad{flex:0 0 auto;border-top:var(--bw) solid var(--ink);
+    display:flex;flex-direction:column;gap:clamp(6px,1.4vmin,12px);
+    padding:clamp(8px,1.8vmin,16px) clamp(8px,2vw,18px);}
+  #wframe{position:relative;width:100%;height:clamp(120px,30vh,300px);
+    border:var(--bw) solid var(--ink);border-radius:clamp(10px,2vmin,18px);
+    background:#fff;overflow:hidden;}
+  #wcanvas{position:absolute;inset:0;width:100%;height:100%;
+    border-radius:inherit;touch-action:none;}
+  #wbtns{display:flex;gap:clamp(6px,1.4vw,12px);}
+  .wbtn{flex:1 1 0;min-width:0;font-size:clamp(16px,3vmin,24px);font-weight:800;
+    padding:clamp(10px,2vmin,16px) 0;border:var(--bw) solid var(--ink);
+    background:var(--paper);color:var(--ink);border-radius:clamp(9px,1.6vmin,14px);
+    cursor:pointer;touch-action:manipulation;}
+  .wbtn:active{background:var(--ink);color:var(--paper);}
+  .wbtn.ok{border-color:var(--ok);color:var(--ok);}
+  .wbtn.ok:active{background:var(--ok);color:#fff;}
 </style>
 <script>
   try { if (localStorage.getItem("lv_theme") === "color")
@@ -109,6 +128,13 @@
     <div id="fx"></div>
   </div>
   <div id="pad"></div>
+  <div id="writepad" hidden>
+    <div id="wframe"><canvas id="wcanvas"></canvas></div>
+    <div id="wbtns">
+      <button class="wbtn" id="wclear" type="button">Dzēst</button>
+      <button class="wbtn ok" id="wcheck" type="button">✓ Pārbaudīt</button>
+    </div>
+  </div>
 </div>
 
 <div id="backdrop"></div>
@@ -120,6 +146,13 @@
   <div class="menu-body">
     <a class="cbtn" href="index.html">🏠 Sākums</a>
     <div>
+      <span class="lbl">Atbilde</span>
+      <div class="row" style="margin-top:8px">
+        <button class="cbtn" data-mode="choose">Izvēlēties</button>
+        <button class="cbtn" data-mode="write">Rakstīt</button>
+      </div>
+    </div>
+    <div>
       <span class="lbl">Ekrāns</span>
       <div class="row" style="margin-top:8px">
         <button class="cbtn" data-theme-btn="eink">E-tinte</button>
@@ -130,10 +163,12 @@
   </div>
 </aside>
 
+<script src="letters.js?v=44610fe"></script>
+<script src="recognize.js?v=44610fe"></script>
 <script>
 "use strict";
 (function () {
-  var APPV = "651872a";
+  var APPV = "44610fe";
   var OP = "sub";   // "add" or "sub"
   var aEl = document.getElementById("a"), bEl = document.getElementById("b");
   var ansEl = document.getElementById("ans"), fxEl = document.getElementById("fx");
@@ -160,6 +195,7 @@
     aEl.textContent = a; bEl.textContent = b;
     ansEl.textContent = "?"; ansEl.className = "";
     busy = false;
+    clearWrite();
   }
 
   function flash(el, cls, ms) {
@@ -167,27 +203,32 @@
     setTimeout(function () { el.classList.remove(cls); }, ms);
   }
 
+  // shared verdict feedback, used by both the number pad and the write pad
+  function onCorrect(shown) {
+    busy = true;
+    correct++; scoreEl.textContent = "✓ " + correct;
+    ansEl.textContent = shown; ansEl.className = "good";
+    fxEl.textContent = "✓"; fxEl.className = "show good";
+    beep(660);
+    setTimeout(function () { fxEl.className = ""; newProblem(); }, 900);
+  }
+  function onWrong() {
+    flash(ansEl, "bad", 400);
+    fxEl.textContent = "✗"; fxEl.className = "show bad";
+    setTimeout(function () { fxEl.className = ""; }, 500);
+    beep(150);
+  }
+
   function answer(n, btn) {
     if (busy) return;
     if (n === ans) {
-      busy = true;
-      correct++; scoreEl.textContent = "✓ " + correct;
-      ansEl.textContent = n; ansEl.className = "good";
       btn.classList.add("right");
-      fxEl.textContent = "✓"; fxEl.className = "show good";
-      beep(660);
-      setTimeout(function () {
-        btn.classList.remove("right");
-        fxEl.className = "";
-        newProblem();
-      }, 900);
+      setTimeout(function () { btn.classList.remove("right"); }, 900);
+      onCorrect(n);
     } else {
       // wrong: flash the tapped key red, brief buzz, let the child retry
       flash(btn, "wrong", 500);
-      flash(ansEl, "bad", 400);
-      fxEl.textContent = "✗"; fxEl.className = "show bad";
-      setTimeout(function () { fxEl.className = ""; }, 500);
-      beep(150);
+      onWrong();
     }
   }
 
@@ -200,6 +241,122 @@
       pad.appendChild(b);
     })(i);
   }
+
+  // ---------- write-the-answer mode ----------
+  // The child writes the answer by hand; DigitRecog checks it against the
+  // expected number's shape (recognize.js). Toggle in the drawer: Izvēlēties
+  // (the 1..10 row) vs Rakstīt (write it).
+  var mode = localStorage.getItem("lv_math_answer") === "write" ? "write" : "choose";
+  var writepad = document.getElementById("writepad");
+  var wcanvas = document.getElementById("wcanvas");
+  var wctx = wcanvas.getContext("2d");
+  var wink = [], wcur = null, wdrawing = false, wpid = null, wptype = "", wlast = null;
+  var wCssH = 0;
+
+  function penColor() {
+    return getComputedStyle(document.documentElement).getPropertyValue("--ink").trim() || "#000";
+  }
+  function sizeWCanvas() {
+    var r = wcanvas.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) return;
+    var dpr = window.devicePixelRatio || 1;
+    wCssH = r.height;
+    wcanvas.width = Math.round(r.width * dpr);
+    wcanvas.height = Math.round(r.height * dpr);
+    wctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    wctx.lineCap = "round"; wctx.lineJoin = "round";
+    wctx.lineWidth = Math.max(3, Math.min(r.width, r.height) * 0.035);
+    wctx.strokeStyle = penColor();
+    redrawWink();
+  }
+  function drawWStroke(st) {
+    if (st.length < 2) return;
+    wctx.beginPath();
+    wctx.moveTo(st[0].x, st[0].y);
+    for (var i = 1; i < st.length; i++) wctx.lineTo(st[i].x, st[i].y);
+    wctx.stroke();
+  }
+  function redrawWink() {
+    if (!wcanvas.width) return;
+    wctx.clearRect(0, 0, wcanvas.width, wcanvas.height);
+    wctx.strokeStyle = penColor();
+    wink.forEach(drawWStroke);
+    if (wcur) drawWStroke(wcur);
+  }
+  function clearWrite() {
+    wink = []; wcur = null; wdrawing = false;
+    if (wcanvas.width) wctx.clearRect(0, 0, wcanvas.width, wcanvas.height);
+  }
+  function toW(ev) {
+    var r = wcanvas.getBoundingClientRect();
+    return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+  }
+  wcanvas.addEventListener("pointerdown", function (ev) {
+    if (busy) return;
+    ev.preventDefault();
+    if (wdrawing) {
+      if (ev.pointerType === "pen" && wptype !== "pen") { wdrawing = false; wcur = null; }
+      else return;
+    }
+    wpid = ev.pointerId; wptype = ev.pointerType || ""; wdrawing = true;
+    var p = toW(ev); wcur = [p]; wlast = p;
+    wctx.strokeStyle = penColor();
+  });
+  wcanvas.addEventListener("pointermove", function (ev) {
+    if (!wdrawing || ev.pointerId !== wpid) return;
+    ev.preventDefault();
+    var evs = ev.getCoalescedEvents ? ev.getCoalescedEvents() : null;
+    if (!evs || !evs.length) evs = [ev];
+    for (var i = 0; i < evs.length; i++) {
+      var p = toW(evs[i]);
+      wctx.beginPath(); wctx.moveTo(wlast.x, wlast.y); wctx.lineTo(p.x, p.y); wctx.stroke();
+      wcur.push(p); wlast = p;
+    }
+  });
+  function endW(ev) {
+    if (!wdrawing || (ev && ev.pointerId !== wpid)) return;
+    wdrawing = false;
+    if (wcur && wcur.length > 1) wink.push(wcur);
+    wcur = null;
+  }
+  wcanvas.addEventListener("pointerup", endW);
+  wcanvas.addEventListener("pointercancel", endW);
+  wcanvas.addEventListener("pointerleave", endW);
+
+  function checkWritten() {
+    if (busy) return;
+    var strokes = wink.filter(function (s) { return s && s.length > 1; });
+    if (!strokes.length) { flash(ansEl, "bad", 250); return; }
+    DigitRecog.build(String(ans));
+    // uniform-scale ink into ~0..100 so recognize.js's size gates line up
+    var k = 100 / (wCssH || 1);
+    var norm = strokes.map(function (st) {
+      return st.map(function (p) { return { x: p.x * k, y: p.y * k }; });
+    });
+    if (DigitRecog.test(norm)) {
+      onCorrect(String(ans));
+    } else {
+      onWrong();
+      setTimeout(clearWrite, 500);   // clear so the next try starts clean
+    }
+  }
+  document.getElementById("wclear").addEventListener("click", clearWrite);
+  document.getElementById("wcheck").addEventListener("click", checkWritten);
+
+  function setMode(m) {
+    mode = (m === "write") ? "write" : "choose";
+    localStorage.setItem("lv_math_answer", mode);
+    document.querySelectorAll("[data-mode]").forEach(function (b) {
+      b.classList.toggle("active", b.dataset.mode === mode);
+    });
+    pad.hidden = (mode !== "choose");
+    writepad.hidden = (mode !== "write");
+    clearWrite();
+    if (mode === "write") setTimeout(sizeWCanvas, 30);
+  }
+  document.querySelectorAll("[data-mode]").forEach(function (b) {
+    b.addEventListener("click", function () { setMode(b.dataset.mode); });
+  });
 
   // tiny sound
   var actx = null;
@@ -230,8 +387,9 @@
   document.getElementById("menuClose").addEventListener("click", function () { setMenu(false); });
   backdrop.addEventListener("click", function () { setMenu(false); });
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && menuOpen) setMenu(false);
-    else if (e.key >= "1" && e.key <= "9") {
+    if (e.key === "Escape" && menuOpen) { setMenu(false); return; }
+    if (mode !== "choose") return;   // the 1..10 keys only drive the number pad
+    if (e.key >= "1" && e.key <= "9") {
       var b = pad.children[parseInt(e.key, 10) - 1]; if (b) b.click();
     } else if (e.key === "0") { var t = pad.children[9]; if (t) t.click(); }  // 0 -> 10
   });
@@ -244,6 +402,7 @@
     document.querySelectorAll("[data-theme-btn]").forEach(function (b) {
       b.classList.toggle("active", (b.dataset.themeBtn === "color") === color);
     });
+    if (mode === "write") redrawWink();   // pen colour follows the theme
   }
   document.querySelectorAll("[data-theme-btn]").forEach(function (b) {
     b.addEventListener("click", function () {
@@ -252,8 +411,23 @@
     });
   });
 
+  // JS-measured height + canvas sizing (dvh over-reports on some e-ink tablets)
+  function layout() {
+    var vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    document.getElementById("app").style.height = Math.round(vh) + "px";
+    if (mode === "write") sizeWCanvas();
+  }
+  var rzTimer = null;
+  function onResize() { clearTimeout(rzTimer); rzTimer = setTimeout(layout, 150); }
+  window.addEventListener("resize", onResize);
+  window.addEventListener("orientationchange", function () { setTimeout(onResize, 250); });
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", onResize);
+  window.addEventListener("load", function () { setTimeout(layout, 300); });
+
   document.getElementById("appVer").textContent = "Versija: " + APPV;
   applyTheme();
+  setMode(mode);
+  layout();
   newProblem();
 })();
 </script>
