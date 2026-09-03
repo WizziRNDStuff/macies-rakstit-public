@@ -134,11 +134,12 @@
   </div>
   <div id="pad"></div>
   <div id="writepad" hidden>
-    <div class="whint">Uzraksti atbildi un nospied ✓ Pārbaudīt. Atpazīšana vēl top — reizēm pareizu ciparu var neatpazīt.</div>
+    <div class="whint">Uzraksti atbildi un nospied ✓ Pārbaudīt. Atpazīšana vēl top — ja pareizu ciparu neatpazīst, spied Tālāk ▶.</div>
     <div id="wframe"><canvas id="wcanvas"></canvas></div>
     <div id="wbtns">
       <button class="wbtn" id="wclear" type="button">Dzēst</button>
       <button class="wbtn ok" id="wcheck" type="button">✓ Pārbaudīt</button>
+      <button class="wbtn" id="wskip" type="button">Tālāk ▶</button>
     </div>
   </div>
 </div>
@@ -157,7 +158,7 @@
         <button class="cbtn" data-mode="choose">Izvēlēties</button>
         <button class="cbtn" data-mode="write">Rakstīt</button>
       </div>
-      <p class="hint">⚠️ “Rakstīt”: cipara atpazīšana vēl top — reizēm pareizu ciparu var neatpazīt. Ja tā notiek, mēģini uzrakstīt vēlreiz.</p>
+      <p class="hint">⚠️ “Rakstīt”: cipara atpazīšana vēl top — reizēm pareizu ciparu var neatpazīt. Ja atbilde ir pareiza, bet netiek atpazīta, spied “Tālāk ▶”, lai turpinātu.</p>
     </div>
     <div>
       <span class="lbl">Ekrāns</span>
@@ -170,12 +171,12 @@
   </div>
 </aside>
 
-<script src="letters.js?v=4b1d006"></script>
-<script src="recognize.js?v=4b1d006"></script>
+<script src="letters.js?v=d181fc8"></script>
+<script src="recognize.js?v=d181fc8"></script>
 <script>
 "use strict";
 (function () {
-  var APPV = "4b1d006";
+  var APPV = "d181fc8";
   var OP = "sub";   // "add" or "sub"
   var aEl = document.getElementById("a"), bEl = document.getElementById("b");
   var ansEl = document.getElementById("ans"), fxEl = document.getElementById("fx");
@@ -342,12 +343,23 @@
     if (DigitRecog.recognize(norm, String(ans))) {
       onCorrect(String(ans));
     } else {
+      // keep the ink on screen so a parent can judge it and, if it's right,
+      // tap "Tālāk ▶" to move on; the child can also Dzēst and try again
       onWrong();
-      setTimeout(clearWrite, 500);   // clear so the next try starts clean
     }
+  }
+  // parent override: reveal the answer and move on without scoring — for when
+  // the recognizer misses a correct answer (see the disclaimer)
+  function skipTask() {
+    if (busy) return;
+    busy = true;
+    fxEl.className = "";
+    ansEl.textContent = String(ans); ansEl.className = "";   // neutral reveal
+    setTimeout(newProblem, 1000);
   }
   document.getElementById("wclear").addEventListener("click", clearWrite);
   document.getElementById("wcheck").addEventListener("click", checkWritten);
+  document.getElementById("wskip").addEventListener("click", skipTask);
 
   function setMode(m) {
     mode = (m === "write") ? "write" : "choose";
