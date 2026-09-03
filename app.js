@@ -1,6 +1,6 @@
 "use strict";
 (function () {
-  var APPV = "bda2bd6";   // keep in lockstep with the ?v= cache-buster in index.html
+  var APPV = "a2fb01e";   // keep in lockstep with the ?v= cache-buster in index.html
   const guideSvg = document.getElementById("guide");
   const canvas   = document.getElementById("pad");
   const ctx      = canvas.getContext("2d", { willReadFrequently: false });
@@ -29,8 +29,11 @@
   let level = parseInt(localStorage.getItem("lv_level") || "2", 10);
   if (!LEVELS[level]) level = 2;
   let animOn = localStorage.getItem("lv_anim") !== "off"; // default ON
-  let lower = localStorage.getItem("lv_case") === "lower"; // default UPPER
-  LETTERS = lower ? LETTERS_LOWER : LETTERS_UPPER;
+  // digits mode (Raksti ciparus): the page sets window.LV_MODE before app.js.
+  // Same engine, but a fixed 0-9 set and no upper/lower case toggle.
+  const DIGITS = window.LV_MODE === "digits";
+  let lower = !DIGITS && localStorage.getItem("lv_case") === "lower"; // default UPPER
+  LETTERS = DIGITS ? LETTERS_DIGITS : (lower ? LETTERS_LOWER : LETTERS_UPPER);
 
   // ---------- letter transform ----------
   // Letters render upright (no slant). The size slider scales about the centre.
@@ -892,6 +895,9 @@
       "ABC / abc — pārslēdz starp lielajiem un mazajiem burtiem.",
       "Animācija — vai katram jaunam burtam automātiski parādīt, kā to raksta. Grūtajā līmenī animācija rādās vienmēr.",
     ]},
+    cipari: { t: "Cipari", p: [
+      "Animācija — vai katram jaunam ciparam automātiski parādīt, kā to raksta. Grūtajā līmenī animācija rādās vienmēr.",
+    ]},
     izmers: { t: "Burtu izmērs", p: [
       "Cik liels burts redzams uz ekrāna. Rakstīšanas līnijas pielāgojas izmēram.",
     ]},
@@ -1010,6 +1016,7 @@
   function updateCaseBtn() {
     // highlight the currently active case in the "ABC / abc" label
     const b = document.getElementById("caseToggle");
+    if (!b) return;   // digits page has no case toggle
     b.textContent = lower ? "abc" : "ABC";
     b.classList.add("active");
   }
@@ -1047,7 +1054,8 @@
     updateAnimBtn();
   });
   document.getElementById("showDemo").addEventListener("click", playDemo);
-  document.getElementById("caseToggle").addEventListener("click", toggleCase);
+  var caseBtn = document.getElementById("caseToggle");
+  if (caseBtn) caseBtn.addEventListener("click", toggleCase);
   menuBtn.addEventListener("click", () => setMenu(!menuOpen));
   menuClose.addEventListener("click", () => setMenu(false));
   backdrop.addEventListener("click", () => setMenu(false));

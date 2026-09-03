@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Mācāmies rakstīt burtus</title>
+<title>Mācāmies rakstīt ciparus</title>
 <style>
   :root{
     /* E-ink (default): high contrast, optimised for e-paper */
@@ -265,11 +265,11 @@
   <header>
     <button class="iconbtn" id="menuBtn" aria-label="Iestatījumi"
             aria-controls="menu" aria-expanded="false">☰</button>
-    <div class="title">Mācāmies rakstīt burtus ✏️</div>
-    <div id="letterName"><span id="letterChar">A</span></div>
-    <button class="progress" id="gridBtn" aria-label="Visi burti"
+    <div class="title">Mācāmies rakstīt ciparus 🔢</div>
+    <div id="letterName"><span id="letterChar">0</span></div>
+    <button class="progress" id="gridBtn" aria-label="Visi cipari"
             aria-controls="picker" aria-expanded="false">
-      <span id="prog">1 / 33</span>
+      <span id="prog">1 / 10</span>
     </button>
   </header>
 
@@ -309,7 +309,7 @@
 <div id="picker" aria-labelledby="pickerTitle">
   <div class="picker-head">
     <button class="iconbtn" id="pickerClose" aria-label="Aizvērt">✕</button>
-    <span class="t" id="pickerTitle">Visi burti</span>
+    <span class="t" id="pickerTitle">Visi cipari</span>
   </div>
   <div class="picker-grid" id="pickerGrid"></div>
 </div>
@@ -331,9 +331,8 @@
       </div>
     </div>
     <div class="grp">
-      <div class="row"><span class="lbl">Burti</span><button class="infobtn" data-info="burti" aria-label="Skaidrojums">i</button></div>
+      <div class="row"><span class="lbl">Cipari</span><button class="infobtn" data-info="cipari" aria-label="Skaidrojums">i</button></div>
       <div class="row">
-        <button class="cbtn" id="caseToggle">ABC / abc</button>
         <button class="cbtn" id="animToggle">Animācija: IESL.</button>
       </div>
     </div>
@@ -370,6 +369,7 @@
 </aside>
 
 <!-- ?v= busts stale caches on tablets; bump it when either file changes -->
+<script>window.LV_MODE = "digits";</script>
 <script src="letters.js?v=a2fb01e"></script>
 <script src="app.js?v=a2fb01e"></script>
 </body>
