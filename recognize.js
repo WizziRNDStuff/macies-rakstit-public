@@ -7,10 +7,13 @@
 // this reuses that engine's tuned align+coverage logic (see app.js): the right
 // number passes, a scribble or a different number fails.
 //
-// API:  DigitRecog.build("7")   // or "10"  — sets the target
-//       DigitRecog.test(inkStrokes)  -> true | false
+// API:  DigitRecog.recognize(inkStrokes, "7")   // or "10"  -> true | false
 //   inkStrokes: [ [ {x,y}, ... ], ... ]  in ANY consistent linear space; the
 //   caller normalises to ~0..100 (see the math page) so the size gates match.
+//   Multi-digit answers (only "10" here) are split left-to-right into one group
+//   per digit and each digit is recognised on its own — far more robust than
+//   matching both digits as one aligned template, since a child's spacing and
+//   per-digit sizing vary a lot.  build()/test() remain for single-digit use.
 "use strict";
 var DigitRecog = (function () {
   var SVGNS = "http://www.w3.org/2000/svg";
@@ -355,5 +358,46 @@ var DigitRecog = (function () {
     return recogCore(A0).ok;
   }
 
-  return { build: build, test: test };
+  // split ink strokes into k left-to-right groups at the widest x-gaps between
+  // stroke centroids (so "1" and "0" land in separate groups)
+  function splitByX(strokes, k) {
+    var items = strokes.map(function (st) {
+      var sx = 0;
+      for (var i = 0; i < st.length; i++) sx += st[i].x;
+      return { st: st, cx: sx / st.length };
+    });
+    items.sort(function (a, b) { return a.cx - b.cx; });
+    if (items.length < k) return null;   // can't form k groups
+    var gaps = [];
+    for (var i = 1; i < items.length; i++) gaps.push({ i: i, g: items[i].cx - items[i - 1].cx });
+    gaps.sort(function (a, b) { return b.g - a.g; });
+    var cuts = gaps.slice(0, k - 1).map(function (x) { return x.i; })
+                   .sort(function (a, b) { return a - b; });
+    var groups = [], start = 0;
+    cuts.forEach(function (c) {
+      groups.push(items.slice(start, c).map(function (x) { return x.st; }));
+      start = c;
+    });
+    groups.push(items.slice(start).map(function (x) { return x.st; }));
+    return groups;
+  }
+
+  // recognise the child's ink as the expected number (1 or more digits)
+  function recognize(inkStrokes, numStr) {
+    var strokes = (inkStrokes || []).filter(function (s) { return s && s.length > 1; });
+    if (!strokes.length || !numStr) return false;
+    if (numStr.length <= 1) {
+      build(numStr);
+      return test(strokes);
+    }
+    var groups = splitByX(strokes, numStr.length);
+    if (!groups || groups.length !== numStr.length) return false;
+    for (var i = 0; i < numStr.length; i++) {
+      build(numStr.charAt(i));
+      if (!test(groups[i])) return false;
+    }
+    return true;
+  }
+
+  return { build: build, test: test, recognize: recognize };
 })();
