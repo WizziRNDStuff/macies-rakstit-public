@@ -107,6 +107,11 @@
   .wbtn:active{background:var(--ink);color:var(--paper);}
   .wbtn.ok{border-color:var(--ok);color:var(--ok);}
   .wbtn.ok:active{background:var(--ok);color:#fff;}
+  /* development disclaimer for the handwriting recognition */
+  .hint{font-size:clamp(11px,2vmin,14px);line-height:1.4;color:var(--guide);
+    margin:clamp(6px,1.4vmin,10px) 0 0;}
+  #writepad .whint{font-size:clamp(11px,2vmin,14px);line-height:1.35;
+    color:var(--guide);text-align:center;margin:0;}
 </style>
 <script>
   try { if (localStorage.getItem("lv_theme") === "color")
@@ -129,6 +134,7 @@
   </div>
   <div id="pad"></div>
   <div id="writepad" hidden>
+    <div class="whint">Uzraksti atbildi un nospied ✓ Pārbaudīt. Atpazīšana vēl top — reizēm pareizu ciparu var neatpazīt.</div>
     <div id="wframe"><canvas id="wcanvas"></canvas></div>
     <div id="wbtns">
       <button class="wbtn" id="wclear" type="button">Dzēst</button>
@@ -151,6 +157,7 @@
         <button class="cbtn" data-mode="choose">Izvēlēties</button>
         <button class="cbtn" data-mode="write">Rakstīt</button>
       </div>
+      <p class="hint">⚠️ “Rakstīt”: cipara atpazīšana vēl top — reizēm pareizu ciparu var neatpazīt. Ja tā notiek, mēģini uzrakstīt vēlreiz.</p>
     </div>
     <div>
       <span class="lbl">Ekrāns</span>
@@ -163,12 +170,12 @@
   </div>
 </aside>
 
-<script src="letters.js?v=9b28e35"></script>
-<script src="recognize.js?v=9b28e35"></script>
+<script src="letters.js?v=4b1d006"></script>
+<script src="recognize.js?v=4b1d006"></script>
 <script>
 "use strict";
 (function () {
-  var APPV = "9b28e35";
+  var APPV = "4b1d006";
   var OP = "sub";   // "add" or "sub"
   var aEl = document.getElementById("a"), bEl = document.getElementById("b");
   var ansEl = document.getElementById("ans"), fxEl = document.getElementById("fx");
