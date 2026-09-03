@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Zīmēt</title>
+<style>
+  :root{
+    /* E-ink (default): high contrast, optimised for e-paper */
+    --ink:#000; --paper:#fff; --guide:#9a9a9a;
+    --board:#fff; --bw:3px;
+  }
+  :root[data-theme="color"]{
+    --ink:#3730a3; --paper:#f4f8ff; --guide:#f59e0b;
+    --board:#ffffff;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Segoe UI",Arial,Helvetica,sans-serif;overflow:hidden;
+    touch-action:none;user-select:none;-webkit-user-select:none;
+    -webkit-text-size-adjust:100%;}
+  #app{display:flex;flex-direction:column;height:100vh;height:100dvh;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right)
+            env(safe-area-inset-bottom) env(safe-area-inset-left);}
+
+  header{display:flex;align-items:center;gap:clamp(8px,2vw,14px);
+    padding:clamp(6px,1.6vmin,14px) clamp(10px,2.5vw,22px);
+    border-bottom:var(--bw) solid var(--ink);flex:0 0 auto;}
+  header .title{font-size:clamp(15px,3.4vmin,24px);font-weight:700;
+    letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    flex:1 1 auto;min-width:0;}
+  .iconbtn{font-size:clamp(18px,3.4vmin,26px);line-height:1;font-weight:700;
+    padding:clamp(4px,1vmin,8px) clamp(8px,1.6vw,12px);
+    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;
+    min-width:0;flex:0 0 auto;touch-action:manipulation;}
+  .iconbtn:active,.iconbtn.active{background:var(--ink);color:var(--paper);}
+
+  /* ---- toolbar ---- */
+  #tools{display:flex;flex-wrap:wrap;align-items:center;
+    gap:clamp(6px,1.4vw,12px);flex:0 0 auto;
+    padding:clamp(6px,1.4vmin,12px) clamp(8px,2vw,18px);
+    border-bottom:var(--bw) solid var(--ink);}
+  #tools .grp{display:flex;align-items:center;gap:clamp(4px,1vw,8px);
+    flex-wrap:wrap;}
+  #tools .sep{width:var(--bw);align-self:stretch;background:var(--ink);
+    opacity:.25;border-radius:2px;margin:0 clamp(2px,.6vw,6px);}
+  /* tool + action buttons */
+  .tbtn{font-size:clamp(16px,2.8vmin,22px);line-height:1;font-weight:700;
+    padding:clamp(6px,1.3vmin,11px) clamp(8px,1.6vw,13px);
+    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;
+    touch-action:manipulation;min-width:0;}
+  .tbtn:active,.tbtn.active{background:var(--ink);color:var(--paper);}
+  /* colour swatches */
+  .sw{width:clamp(26px,5vmin,38px);height:clamp(26px,5vmin,38px);
+    border-radius:50%;border:var(--bw) solid var(--ink);cursor:pointer;
+    padding:0;touch-action:manipulation;position:relative;flex:0 0 auto;}
+  .sw.active{outline:clamp(3px,.9vmin,5px) solid var(--ink);
+    outline-offset:2px;}
+  .sw.white{border-color:var(--guide);}
+  /* the custom-colour chip wraps a native colour input */
+  .sw.custom{overflow:hidden;display:inline-flex;align-items:center;
+    justify-content:center;background:
+      conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);}
+  .sw.custom input{position:absolute;inset:-4px;width:calc(100% + 8px);
+    height:calc(100% + 8px);opacity:0;cursor:pointer;border:0;padding:0;}
+  .sw.custom span{font-size:clamp(13px,2.4vmin,18px);
+    text-shadow:0 0 2px #fff,0 0 2px #fff;pointer-events:none;}
+  /* thickness slider */
+  #sizeWrap{display:flex;align-items:center;gap:clamp(4px,1vw,8px);}
+  #sizeDot{border-radius:50%;background:var(--ink);flex:0 0 auto;}
+  #sizeRange{-webkit-appearance:none;appearance:none;background:transparent;
+    touch-action:auto;cursor:pointer;width:clamp(90px,18vw,170px);
+    height:clamp(20px,3.4vmin,28px);margin:0;}
+  #sizeRange::-webkit-slider-runnable-track{height:var(--bw);
+    background:var(--ink);border-radius:2px;}
+  #sizeRange::-moz-range-track{height:var(--bw);background:var(--ink);border-radius:2px;}
+  #sizeRange::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:clamp(18px,3.2vmin,26px);height:clamp(18px,3.2vmin,26px);
+    border-radius:50%;background:var(--paper);border:var(--bw) solid var(--ink);
+    margin-top:calc(var(--bw) / 2 - clamp(18px,3.2vmin,26px) / 2);}
+  #sizeRange::-moz-range-thumb{width:clamp(18px,3.2vmin,26px);
+    height:clamp(18px,3.2vmin,26px);border-radius:50%;background:var(--paper);
+    border:var(--bw) solid var(--ink);box-sizing:border-box;}
+
+  /* ---- drawing surface ---- */
+  #stage{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;
+    justify-content:stretch;position:relative;padding:clamp(6px,1.6vmin,16px);}
+  #frame{position:relative;flex:1 1 auto;
+    border:var(--bw) solid var(--ink);border-radius:clamp(10px,2vmin,20px);
+    background:var(--board);overflow:hidden;}
+  #frame canvas{position:absolute;inset:0;width:100%;height:100%;
+    border-radius:inherit;touch-action:none;}
+
+  /* ---- settings drawer ---- */
+  #backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:15;
+    opacity:0;pointer-events:none;transition:opacity .22s ease;}
+  #backdrop.open{opacity:1;pointer-events:auto;}
+  #menu{position:fixed;top:0;left:0;bottom:0;z-index:20;
+    width:min(88vw,340px);background:var(--paper);
+    border-right:var(--bw) solid var(--ink);
+    display:flex;flex-direction:column;
+    transform:translateX(-100%);visibility:hidden;
+    transition:transform .22s ease, visibility 0s linear .22s;}
+  #menu.open{transform:translateX(0);visibility:visible;
+    transition:transform .22s ease, visibility 0s;}
+  @media (prefers-reduced-motion:reduce){ #menu,#backdrop{transition:none;} }
+  .menu-head{display:flex;align-items:center;gap:clamp(8px,2vw,14px);
+    flex:0 0 auto;padding:clamp(8px,1.8vmin,14px) clamp(10px,2.5vw,18px);
+    padding-top:calc(clamp(8px,1.8vmin,14px) + env(safe-area-inset-top));
+    border-bottom:var(--bw) solid var(--ink);}
+  .menu-head .t{font-size:clamp(15px,3vmin,22px);font-weight:800;
+    flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;}
+  .menu-body{flex:1 1 auto;min-height:0;overflow-y:auto;touch-action:pan-y;
+    padding:clamp(10px,2.4vmin,18px);
+    padding-bottom:calc(clamp(10px,2.4vmin,18px) + env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;gap:clamp(14px,3vmin,22px);}
+  #menu .grp{display:flex;flex-direction:column;align-items:stretch;
+    gap:clamp(6px,1.4vmin,10px);}
+  #menu .row{display:flex;flex-wrap:wrap;gap:clamp(6px,1.4vw,10px);align-items:center;}
+  #menu .row .cbtn{flex:1 1 auto;min-width:0;}
+  #menu .homebtn{display:block;text-align:center;text-decoration:none;
+    font-size:clamp(14px,2.4vmin,19px);padding:clamp(8px,1.6vmin,12px);}
+  #menu .lbl{font-size:clamp(12px,2vmin,16px);font-weight:700;color:var(--guide);
+    text-transform:uppercase;letter-spacing:.5px;}
+  #menu .ver{margin-top:auto;text-align:center;color:var(--guide);
+    font-size:clamp(11px,1.8vmin,14px);padding-top:clamp(8px,2vmin,14px);
+    font-variant-numeric:tabular-nums;}
+  .cbtn{font-size:clamp(13px,2.2vmin,18px);font-weight:700;
+    padding:clamp(5px,1vmin,9px) clamp(10px,2vw,18px);
+    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;touch-action:manipulation;}
+  .cbtn:active,.cbtn.active{background:var(--ink);color:var(--paper);}
+
+  @media (max-width:520px){ header .title{font-size:clamp(13px,4.4vw,18px);} }
+</style>
+<script>
+  /* set the theme before first paint so colourful users see no e-ink flash */
+  try { if (localStorage.getItem("lv_theme") === "color")
+          document.documentElement.dataset.theme = "color"; } catch (e) {}
+</script>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button class="iconbtn" id="menuBtn" aria-label="Iestatījumi"
+            aria-controls="menu" aria-expanded="false">☰</button>
+    <div class="title">Zīmēt 🎨</div>
+    <button class="iconbtn" id="undoBtn" aria-label="Atsaukt">↶</button>
+    <button class="iconbtn" id="clearBtn" aria-label="Dzēst visu">🗑️</button>
+  </header>
+
+  <div id="tools">
+    <div class="grp" id="penGrp">
+      <button class="tbtn active" data-tool="pen"    aria-label="Pildspalva" title="Pildspalva">✒️</button>
+      <button class="tbtn"        data-tool="marker" aria-label="Flomāsters" title="Flomāsters">🖊️</button>
+      <button class="tbtn"        data-tool="pencil" aria-label="Zīmulis" title="Zīmulis">✏️</button>
+      <button class="tbtn"        data-tool="brush"  aria-label="Ota" title="Ota">🖌️</button>
+      <button class="tbtn"        data-tool="eraser" aria-label="Dzēšgumija" title="Dzēšgumija">🧽</button>
+    </div>
+    <div class="sep"></div>
+    <div class="grp" id="colorGrp"><!-- swatches injected --></div>
+    <div class="sep"></div>
+    <div class="grp" id="sizeWrap">
+      <span id="sizeDot"></span>
+      <input type="range" id="sizeRange" min="2" max="48" step="1" value="12"
+             aria-label="Līnijas resnums">
+    </div>
+  </div>
+
+  <div id="stage">
+    <div id="frame">
+      <canvas id="board"></canvas>
+      <canvas id="live"></canvas>
+    </div>
+  </div>
+</div>
+
+<div id="backdrop"></div>
+<aside id="menu" aria-labelledby="menuTitle">
+  <div class="menu-head">
+    <button class="iconbtn" id="menuClose" aria-label="Aizvērt">✕</button>
+    <span class="t" id="menuTitle">Iestatījumi</span>
+  </div>
+  <div class="menu-body">
+    <a class="cbtn homebtn" href="index.html">🏠 Sākums</a>
+    <div class="grp">
+      <div class="row"><span class="lbl">Ekrāns</span></div>
+      <div class="row">
+        <button class="cbtn" data-theme-btn="eink">E-tinte</button>
+        <button class="cbtn" data-theme-btn="color">Krāsains</button>
+      </div>
+    </div>
+    <div class="grp">
+      <div class="row"><span class="lbl">Zīmējums</span></div>
+      <div class="row">
+        <button class="cbtn" id="clearBtn2">🗑️ Dzēst visu</button>
+      </div>
+    </div>
+    <div class="ver" id="appVer"></div>
+  </div>
+</aside>
+
+<script>
+"use strict";
+(function () {
+  var APPV = "651872a";   // deploy.sh stamps the "651872a" string with the git short hash
+
+  var frame = document.getElementById("frame");
+  var board = document.getElementById("board");   // committed drawing
+  var live  = document.getElementById("live");     // current stroke, drawn opaque
+  var bctx  = board.getContext("2d");
+  var lctx  = live.getContext("2d");
+
+  // ---------- tools ----------
+  // widthK scales the slider; alpha is applied once when the finished stroke is
+  // flattened onto the board (so a translucent marker never darkens where it
+  // overlaps itself within one stroke). speed = width varies with pen speed.
+  var TOOLS = {
+    pen:    { alpha: 1.0,  widthK: 1.0, cap: "round", grain: false, speed: false },
+    marker: { alpha: 0.4,  widthK: 2.2, cap: "round", grain: false, speed: false },
+    pencil: { alpha: 0.85, widthK: 0.6, cap: "round", grain: true,  speed: false },
+    brush:  { alpha: 1.0,  widthK: 1.5, cap: "round", grain: false, speed: true  },
+  };
+
+  var COLORS = [
+    "#000000", "#e11d48", "#f97316", "#eab308", "#16a34a",
+    "#2563eb", "#7c3aed", "#92400e", "#ec4899", "#ffffff",
+  ];
+
+  var tool  = localStorage.getItem("lv_draw_tool") || "pen";
+  if (!TOOLS[tool] && tool !== "eraser") tool = "pen";
+  var color = localStorage.getItem("lv_draw_color") || "#000000";
+  var size  = parseInt(localStorage.getItem("lv_draw_size") || "12", 10);
+  if (!(size >= 2 && size <= 48)) size = 12;
+  var customColor = localStorage.getItem("lv_draw_custom") || "#0d9488";
+
+  // ---------- undo history (flattened bitmaps of the board) ----------
+  // Bounded so an old e-ink tablet's memory stays sane. Each entry is one
+  // ImageData at device resolution.
+  var HIST_MAX = 8;
+  var history = [];
+
+  function pushHistory() {
+    try {
+      if (board.width === 0 || board.height === 0) return;
+      history.push(bctx.getImageData(0, 0, board.width, board.height));
+      if (history.length > HIST_MAX) history.shift();
+    } catch (e) { /* getImageData can throw on a 0-size canvas */ }
+    updateUndo();
+  }
+  function undo() {
+    if (!history.length) return;
+    var img = history.pop();
+    // the snapshot was taken at the same device size unless the screen was
+    // resized meanwhile; guard so a stale-size snapshot can't throw
+    if (img.width === board.width && img.height === board.height) {
+      bctx.putImageData(img, 0, 0);
+    }
+    updateUndo();
+  }
+  function updateUndo() {
+    document.getElementById("undoBtn").style.opacity = history.length ? "1" : ".35";
+  }
+
+  // ---------- layout (JS-measured; dvh/cq units misreport on e-ink) ----------
+  var dpr = window.devicePixelRatio || 1;
+  function layout() {
+    var vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    document.getElementById("app").style.height = Math.round(vh) + "px";
+
+    var r = frame.getBoundingClientRect();
+    var w = Math.max(1, Math.round(r.width));
+    var h = Math.max(1, Math.round(r.height));
+    dpr = window.devicePixelRatio || 1;
+
+    // preserve the current drawing across a resize by scaling it into the
+    // new board (orientation changes are rare; slight rescale is acceptable)
+    var prev = null;
+    if (board.width && board.height) {
+      prev = document.createElement("canvas");
+      prev.width = board.width; prev.height = board.height;
+      prev.getContext("2d").drawImage(board, 0, 0);
+    }
+
+    [board, live].forEach(function (c) {
+      c.width = Math.round(w * dpr);
+      c.height = Math.round(h * dpr);
+      var cx = c.getContext("2d");
+      cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cx.lineCap = "round"; cx.lineJoin = "round";
+    });
+
+    if (prev) bctx.drawImage(prev, 0, 0, w, h);
+    // a resize invalidates old snapshots (different device size) — start fresh
+    history = [];
+    updateUndo();
+  }
+
+  // ---------- drawing ----------
+  var drawing = false, activeId = null, activeType = "";
+  var pts = [];          // current stroke: {x, y, w, jx, jy}
+  var lastT = 0, lastV = 0;
+
+  function toPt(ev) {
+    var r = live.getBoundingClientRect();
+    return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+  }
+
+  function baseWidth() { return size * (tool === "eraser" ? 1.6 : TOOLS[tool].widthK); }
+
+  // brush: width eases with pen speed — slow = fat, fast = thin (calligraphy)
+  function speedWidth(v) {
+    var bw = baseWidth();
+    var k = 1 / (1 + v * 0.09);          // v in css px per ms
+    return Math.max(bw * 0.35, bw * (0.55 + 0.9 * k));
+  }
+
+  function addPoint(p, now) {
+    var w = baseWidth();
+    if (tool !== "eraser" && TOOLS[tool].speed) {
+      var v = 0;
+      if (pts.length) {
+        var q = pts[pts.length - 1];
+        var d = Math.hypot(p.x - q.x, p.y - q.y);
+        var dt = Math.max(1, now - lastT);
+        v = 0.5 * lastV + 0.5 * (d / dt);   // smoothed speed
+        lastV = v;
+      }
+      w = speedWidth(v);
+    }
+    var jx = 0, jy = 0;
+    if (tool !== "eraser" && TOOLS[tool].grain) {
+      // fixed per-point jitter (stored, so redraws don't shimmer)
+      jx = (Math.random() - 0.5) * Math.max(1, size * 0.18);
+      jy = (Math.random() - 0.5) * Math.max(1, size * 0.18);
+    }
+    pts.push({ x: p.x, y: p.y, w: w, jx: jx, jy: jy });
+    lastT = now;
+  }
+
+  // The live layer is drawn fully OPAQUE (the tool's alpha is applied once, at
+  // flatten time), so overlapping segments within one stroke never darken —
+  // which means we can draw each new segment incrementally instead of redrawing
+  // the whole stroke every move. That keeps a long scribble O(n), not O(n^2).
+  function liveDot(a) {
+    lctx.fillStyle = color;
+    lctx.beginPath();
+    lctx.arc(a.x + a.jx, a.y + a.jy, Math.max(0.5, a.w / 2), 0, Math.PI * 2);
+    lctx.fill();
+  }
+  function liveSeg(a, b) {
+    lctx.strokeStyle = color;
+    lctx.lineCap = "round"; lctx.lineJoin = "round";
+    lctx.lineWidth = (tool !== "eraser" && TOOLS[tool].speed) ? (a.w + b.w) / 2 : a.w;
+    lctx.beginPath();
+    lctx.moveTo(a.x + a.jx, a.y + a.jy);
+    lctx.lineTo(b.x + b.jx, b.y + b.jy);
+    lctx.stroke();
+  }
+
+  // eraser paints straight onto the board (destination-out) so it feels live
+  function eraseSegment(a, b) {
+    bctx.save();
+    bctx.globalCompositeOperation = "destination-out";
+    bctx.lineCap = "round"; bctx.lineJoin = "round";
+    bctx.lineWidth = baseWidth();
+    bctx.beginPath();
+    bctx.moveTo(a.x, a.y);
+    bctx.lineTo(b.x, b.y);
+    bctx.stroke();
+    bctx.restore();
+  }
+
+  function startDraw(ev) {
+    ev.preventDefault();
+    if (drawing) {
+      if (ev.pointerType === "pen" && activeType !== "pen") drawing = false;
+      else return;
+    }
+    activeId = ev.pointerId;
+    activeType = ev.pointerType || "";
+    drawing = true;
+    pushHistory();                 // snapshot BEFORE this stroke, for undo
+    pts = [];
+    lastT = (ev.timeStamp || performance.now());
+    lastV = 0;
+    var p = toPt(ev);
+    addPoint(p, lastT);
+    if (tool === "eraser") eraseSegment(p, p);
+    else liveDot(pts[0]);
+  }
+
+  function moveDraw(ev) {
+    if (!drawing || ev.pointerId !== activeId) return;
+    ev.preventDefault();
+    var evs = ev.getCoalescedEvents ? ev.getCoalescedEvents() : null;
+    if (!evs || !evs.length) evs = [ev];
+    for (var i = 0; i < evs.length; i++) {
+      var p = toPt(evs[i]);
+      var now = (evs[i].timeStamp || performance.now());
+      if (pts.length) {
+        var q = pts[pts.length - 1];
+        if (Math.hypot(p.x - q.x, p.y - q.y) < 1) continue;  // skip jitter
+      }
+      var prev = pts[pts.length - 1];
+      addPoint(p, now);
+      var cur = pts[pts.length - 1];
+      if (tool === "eraser") eraseSegment(prev, cur);
+      else liveSeg(prev, cur);
+    }
+  }
+
+  function endDraw(ev) {
+    if (!drawing || (ev && ev.pointerId !== activeId)) return;
+    drawing = false;
+    if (tool !== "eraser") {
+      // flatten the finished stroke onto the board, applying the tool's alpha
+      // exactly once (no self-overlap darkening)
+      bctx.save();
+      bctx.globalAlpha = TOOLS[tool].alpha;
+      bctx.drawImage(live, 0, 0, live.width / dpr, live.height / dpr);
+      bctx.restore();
+      lctx.clearRect(0, 0, live.width, live.height);
+    }
+    pts = [];
+  }
+
+  live.addEventListener("pointerdown", startDraw);
+  live.addEventListener("pointermove", moveDraw);
+  live.addEventListener("pointerup", endDraw);
+  live.addEventListener("pointercancel", endDraw);
+  live.addEventListener("pointerleave", endDraw);
+
+  // ---------- clear ----------
+  function clearBoard() {
+    pushHistory();
+    bctx.clearRect(0, 0, board.width, board.height);
+  }
+
+  // ---------- tool / colour / size UI ----------
+  function setTool(t) {
+    tool = t;
+    localStorage.setItem("lv_draw_tool", t);
+    document.querySelectorAll("[data-tool]").forEach(function (b) {
+      b.classList.toggle("active", b.dataset.tool === t);
+    });
+    updateSizeDot();
+  }
+  document.querySelectorAll("[data-tool]").forEach(function (b) {
+    b.addEventListener("click", function () { setTool(b.dataset.tool); });
+  });
+
+  var colorGrp = document.getElementById("colorGrp");
+  var swatchEls = {};
+  function setColor(c, fromCustom) {
+    color = c;
+    localStorage.setItem("lv_draw_color", c);
+    if (fromCustom) {
+      customColor = c;
+      localStorage.setItem("lv_draw_custom", c);
+    }
+    Object.keys(swatchEls).forEach(function (k) {
+      swatchEls[k].classList.toggle("active",
+        k.toLowerCase() === c.toLowerCase());
+    });
+    document.getElementById("customSw").classList.toggle("active",
+      COLORS.indexOf(c.toLowerCase()) === -1 &&
+      c.toLowerCase() !== "#ffffff");
+    // picking a colour drops the eraser back to the last pen
+    if (tool === "eraser") setTool(localStorage.getItem("lv_draw_pen") || "pen");
+    updateSizeDot();
+  }
+  COLORS.forEach(function (c) {
+    var b = document.createElement("button");
+    b.className = "sw" + (c === "#ffffff" ? " white" : "");
+    b.style.background = c;
+    b.setAttribute("aria-label", "Krāsa " + c);
+    b.addEventListener("click", function () { setColor(c, false); });
+    colorGrp.appendChild(b);
+    swatchEls[c] = b;
+  });
+  // custom colour chip (native picker)
+  (function () {
+    var wrap = document.createElement("label");
+    wrap.className = "sw custom";
+    wrap.id = "customSw";
+    wrap.setAttribute("aria-label", "Izvēlies krāsu");
+    var span = document.createElement("span");
+    span.textContent = "🎨";
+    var inp = document.createElement("input");
+    inp.type = "color";
+    inp.value = customColor;
+    inp.addEventListener("input", function () { setColor(inp.value, true); });
+    wrap.appendChild(inp);
+    wrap.appendChild(span);
+    colorGrp.appendChild(wrap);
+  })();
+
+  var sizeRange = document.getElementById("sizeRange");
+  var sizeDot = document.getElementById("sizeDot");
+  function updateSizeDot() {
+    var px = Math.max(4, Math.min(30, size));
+    sizeDot.style.width = px + "px";
+    sizeDot.style.height = px + "px";
+    sizeDot.style.background = (tool === "eraser") ? "var(--guide)" : color;
+  }
+  function setSize(n) {
+    size = n;
+    localStorage.setItem("lv_draw_size", String(n));
+    updateSizeDot();
+  }
+  sizeRange.addEventListener("input", function () {
+    setSize(parseInt(sizeRange.value, 10));
+  });
+
+  // remember which pen was active so eraser -> colour restores it
+  document.querySelectorAll("[data-tool]").forEach(function (b) {
+    if (b.dataset.tool !== "eraser") {
+      b.addEventListener("click", function () {
+        localStorage.setItem("lv_draw_pen", b.dataset.tool);
+      });
+    }
+  });
+
+  document.getElementById("undoBtn").addEventListener("click", undo);
+  document.getElementById("clearBtn").addEventListener("click", clearBoard);
+  document.getElementById("clearBtn2").addEventListener("click", function () {
+    clearBoard(); setMenu(false);
+  });
+  document.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); }
+  });
+
+  // ---------- drawer ----------
+  var menu = document.getElementById("menu");
+  var backdrop = document.getElementById("backdrop");
+  var menuBtn = document.getElementById("menuBtn");
+  var menuClose = document.getElementById("menuClose");
+  var menuOpen = false;
+  function setMenu(open) {
+    menuOpen = open;
+    menu.classList.toggle("open", open);
+    backdrop.classList.toggle("open", open);
+    menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    menuBtn.classList.toggle("active", open);
+    (open ? menuClose : menuBtn).focus();
+  }
+  menuBtn.addEventListener("click", function () { setMenu(!menuOpen); });
+  menuClose.addEventListener("click", function () { setMenu(false); });
+  backdrop.addEventListener("click", function () { setMenu(false); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && menuOpen) setMenu(false);
+  });
+
+  // ---------- theme ----------
+  var theme = localStorage.getItem("lv_theme") === "color" ? "color" : "eink";
+  function applyTheme() {
+    if (theme === "color") document.documentElement.dataset.theme = "color";
+    else document.documentElement.removeAttribute("data-theme");
+    document.querySelectorAll("[data-theme-btn]").forEach(function (b) {
+      b.classList.toggle("active", b.dataset.themeBtn === theme);
+    });
+    updateSizeDot();
+  }
+  document.querySelectorAll("[data-theme-btn]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      theme = b.dataset.themeBtn === "color" ? "color" : "eink";
+      localStorage.setItem("lv_theme", theme);
+      applyTheme();
+    });
+  });
+
+  // ---------- resize ----------
+  var rzTimer = null;
+  function onResize() {
+    clearTimeout(rzTimer);
+    rzTimer = setTimeout(layout, 150);
+  }
+  window.addEventListener("resize", onResize);
+  window.addEventListener("orientationchange", function () { setTimeout(onResize, 250); });
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", onResize);
+  window.addEventListener("load", function () { setTimeout(onResize, 300); });
+
+  // ---------- init ----------
+  document.getElementById("appVer").textContent = "Versija: " + APPV;
+  sizeRange.value = size;
+  layout();
+  applyTheme();
+  setColor(color, false);
+  setTool(tool);
+  updateSizeDot();
+  updateUndo();
+})();
+</script>
+</body>
+</html>
