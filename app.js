@@ -1,6 +1,6 @@
 "use strict";
 (function () {
-  var APPV = "ea24a60";   // keep in lockstep with the ?v= cache-buster in index.html
+  var APPV = "09b9eeb";   // keep in lockstep with the ?v= cache-buster in index.html
   const guideSvg = document.getElementById("guide");
   const canvas   = document.getElementById("pad");
   const ctx      = canvas.getContext("2d", { willReadFrequently: false });
@@ -771,6 +771,12 @@
     }
     if (Math.hypot(maxX - minX, maxY - minY) < ALIGN.minDiag) return;
     cx /= cnt; cy /= cnt;
+
+    // ML recognition — the same on-device engine as the numbers. If the letter
+    // model recognizes the ink as the target glyph, accept it; otherwise fall
+    // through to the geometric align check below (union).
+    if (typeof LetterNet !== "undefined" && LetterNet.ready &&
+        LetterNet.verify(inkStrokes, LETTERS[idx].char)) { succeed(); return; }
 
     let tx = 0, ty = 0;
     for (const q of tplFlat) { tx += q.x; ty += q.y; }

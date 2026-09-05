@@ -1,19 +1,20 @@
-// In-browser handwritten-digit classifier (Option A: model runs on-device).
+// In-browser handwriting classifier (Option A: model runs on-device).
 //
-// Loads digitnet.json (a small MLP trained offline; see ml/train.py) and runs
-// the identical forward pass verified in ml/verify.py. Drawings never leave the
-// device. The model is an UPGRADE, not a dependency: it loads async, and the
-// math pages fall back to the geometric recognizer (recognize.js) whenever the
-// model isn't ready (first load offline, fetch error, old device).
+// One engine, reused for digits and letters. Classifier(manifestUrl) loads a
+// tiny manifest naming a content-hashed MLP (trained offline; see ml/train.py)
+// and runs the identical forward pass verified in ml/verify.py. Drawings never
+// leave the device. The model is an UPGRADE, not a dependency: it loads async,
+// and callers fall back to the geometric recognizer when it isn't ready.
 //
-// API:  DigitNet.ready            -> bool (model loaded)
-//       DigitNet.whenReady        -> Promise (resolves once loaded/failed)
-//       DigitNet.classify(strokes)-> {digit, prob, probs}
-//       DigitNet.verify(strokes, numStr[, thresh]) -> bool
+//   DigitNet  = Classifier("digitnet.manifest.json")   // math answers (0-9)
+//   LetterNet = Classifier("letternet.manifest.json")  // Raksti burtus (letters)
+//
+// API:  .ready  .whenReady  .classify(strokes)->{label,prob,probs}
+//       .verify(strokes, str[, thresh]) -> bool
 //   strokes: [ [ {x,y}, ... ], ... ] in ANY consistent linear space (the
 //   rasterizer bbox-normalises internally, matching training).
 "use strict";
-var DigitNet = (function () {
+var Classifier = function (manifestUrl) {
   var model = null, ready = false, labels = null;
   var DEFAULT_T = 0.55;
 
@@ -27,7 +28,7 @@ var DigitNet = (function () {
   // manifest is fetched fresh (no-store); the hashed model is cacheable forever,
   // so a retrain (new hash) can never be served stale. Offline before first
   // load -> manifest fetch fails -> caller falls back to the geometric engine.
-  var whenReady = fetch("digitnet.manifest.json", { cache: "no-store" })
+  var whenReady = fetch(manifestUrl, { cache: "no-store" })
     .then(function (r) { if (!r.ok) throw new Error("manifest " + r.status); return r.json(); })
     .then(function (man) {
       labels = man.labels || null;
@@ -171,4 +172,7 @@ var DigitNet = (function () {
     classify: classify,
     verify: verify,
   };
-})();
+};
+
+// digit classifier for the math activities (letters: raksti.html makes LetterNet)
+var DigitNet = Classifier("digitnet.manifest.json");

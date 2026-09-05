@@ -10,3 +10,6 @@
 
 /digitnet.manifest.json
   Cache-Control: no-cache
+
+/letternet.manifest.json
+  Cache-Control: no-cache

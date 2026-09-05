@@ -153,6 +153,14 @@
   <div class="menu-body">
     <a class="cbtn" href="index.html">🏠 Sākums</a>
     <div>
+      <span class="lbl">Skaitļi</span>
+      <div class="row" style="margin-top:8px">
+        <button class="cbtn" data-range="1-10">1–10</button>
+        <button class="cbtn" data-range="10-20">10–20</button>
+        <button class="cbtn" data-range="1-20">1–20</button>
+      </div>
+    </div>
+    <div>
       <span class="lbl">Atbilde</span>
       <div class="row" style="margin-top:8px">
         <button class="cbtn" data-mode="choose">Izvēlēties</button>
@@ -171,13 +179,13 @@
   </div>
 </aside>
 
-<script src="letters.js?v=ea24a60"></script>
-<script src="recognize.js?v=ea24a60"></script>
-<script src="digitnet.js?v=ea24a60"></script>
+<script src="letters.js?v=09b9eeb"></script>
+<script src="recognize.js?v=09b9eeb"></script>
+<script src="digitnet.js?v=09b9eeb"></script>
 <script>
 "use strict";
 (function () {
-  var APPV = "ea24a60";
+  var APPV = "09b9eeb";
   var OP = "sub";   // "add" or "sub"
   var aEl = document.getElementById("a"), bEl = document.getElementById("b");
   var ansEl = document.getElementById("ans"), fxEl = document.getElementById("fx");
@@ -185,17 +193,27 @@
   var ans = 0, busy = false, correct = 0, lastKey = "";
 
   function rnd(n) { return Math.floor(Math.random() * n); }   // 0..n-1
+  function rr(a, b) { return a + rnd(b - a + 1); }            // inclusive a..b
+
+  // number range: addition -> the SUM lands in [lo,hi]; subtraction -> the
+  // minuend lands in [lo,hi], result >= 1
+  var RANGES = { "1-10": [1, 10], "10-20": [10, 20], "1-20": [1, 20] };
+  var rangeKey = localStorage.getItem("lv_range_" + OP) || "1-10";
+  if (!RANGES[rangeKey]) rangeKey = "1-10";
+  var RANGE = RANGES[rangeKey];
 
   function newProblem() {
     var a, b, key, guard = 0;
+    var lo = RANGE[0], hi = RANGE[1];
     do {
-      if (OP === "add") {          // a,b >= 1, sum <= 10
-        a = 1 + rnd(8);            // 1..8
-        b = 1 + rnd(10 - a);       // 1..(10-a)  -> a+b in 2..10
-        ans = a + b;
-      } else {                      // subtraction, a<=10, result 1..a-1
-        a = 2 + rnd(9);            // 2..10
-        b = 1 + rnd(a - 1);        // 1..a-1     -> result 1..9
+      if (OP === "add") {                 // a,b >= 1, sum in [lo,hi]
+        var sum = rr(Math.max(2, lo), hi);
+        a = 1 + rnd(sum - 1);             // 1..sum-1
+        b = sum - a;                       // >= 1
+        ans = sum;
+      } else {                             // minuend in [lo,hi], result 1..a-1
+        a = rr(Math.max(2, lo), hi);
+        b = 1 + rnd(a - 1);
         ans = a - b;
       }
       key = a + "_" + b;
@@ -241,15 +259,31 @@
     }
   }
 
-  // number pad 1..10
-  for (var i = 1; i <= 10; i++) {
-    (function (n) {
-      var b = document.createElement("button");
-      b.type = "button"; b.className = "num"; b.textContent = n;
-      b.addEventListener("click", function () { answer(n, b); });
-      pad.appendChild(b);
-    })(i);
+  // number pad 1..hi (rebuilt when the range changes)
+  function buildPad() {
+    pad.innerHTML = "";
+    for (var i = 1; i <= RANGE[1]; i++) {
+      (function (n) {
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "num"; b.textContent = n;
+        b.addEventListener("click", function () { answer(n, b); });
+        pad.appendChild(b);
+      })(i);
+    }
   }
+  function setRange(k) {
+    if (!RANGES[k]) return;
+    rangeKey = k; RANGE = RANGES[k];
+    localStorage.setItem("lv_range_" + OP, k);
+    document.querySelectorAll("[data-range]").forEach(function (b) {
+      b.classList.toggle("active", b.dataset.range === k);
+    });
+    buildPad();
+    newProblem();
+  }
+  document.querySelectorAll("[data-range]").forEach(function (b) {
+    b.addEventListener("click", function () { setRange(b.dataset.range); });
+  });
 
   // ---------- write-the-answer mode ----------
   // The child writes the answer by hand; DigitRecog checks it against the
@@ -452,7 +486,7 @@
   applyTheme();
   setMode(mode);
   layout();
-  newProblem();
+  setRange(rangeKey);   // builds the pad + first problem for the saved range
 })();
 </script>
 </body>

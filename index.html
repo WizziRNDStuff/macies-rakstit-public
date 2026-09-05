@@ -71,6 +71,7 @@
   :root[data-theme="color"] .c5{--accent:#9333ea;}
   :root[data-theme="color"] .c6{--accent:#db2777;}
   :root[data-theme="color"] .c7{--accent:#0d9488;}
+  :root[data-theme="color"] .c8{--accent:#ca8a04;}
 
   .ver{flex:0 0 auto;text-align:center;color:var(--guide);
     font-size:clamp(11px,1.8vmin,14px);
@@ -144,13 +145,17 @@
       <div class="ic">➖</div>
       <div class="cap">Atņemšana</div>
     </a>
+    <a class="card c8" href="salidzini.html">
+      <div class="ic">⚖️</div>
+      <div class="cap">Salīdzini</div>
+    </a>
     <a class="card c7" href="zimet.html">
       <div class="ic">🎨</div>
       <div class="cap">Zīmēt</div>
     </a>
   </main>
 
-  <div class="ver">Versija: ea24a60</div>
+  <div class="ver">Versija: 09b9eeb</div>
 </div>
 
 <div id="logPop" role="dialog" aria-modal="true" aria-labelledby="logTitle">
@@ -160,7 +165,7 @@
       <button class="iconbtn" id="logClose" aria-label="Aizvērt">✕</button>
     </div>
     <div class="log-body" id="logBody"></div>
-    <div class="log-foot">Versija: ea24a60</div>
+    <div class="log-foot">Versija: 09b9eeb</div>
   </div>
 </div>
 
@@ -181,6 +186,9 @@
   // (or a new group). Kept here so the home screen is the single source.
   var CHANGELOG = [
     { date: "Septembris 2026", items: [
+      "⚖️ Jauns: Salīdzini — salīdzini divus skaitļus: lielāks, mazāks vai vienāds (< = >).",
+      "🔢 Saskaitīšanā un Atņemšanā: izvēlies skaitļu diapazonu — 1–10, 10–20 vai 1–20.",
+      "✏️ Burtu atpazīšana “Grūti” līmenī — dators atpazīst tavu rokrakstu, tāpat kā ciparus.",
       "🎨 Jauns: Zīmēt — brīvi zīmē ar pildspalvu, flomāsteru, zīmuli vai otu; maini krāsu un līnijas resnumu, dzēs ar dzēšgumiju.",
       "🔢 Jauns: Raksti ciparus — mācies rakstīt ciparus 0–9 tavā paša rokrakstā.",
       "✍️ Jauns: Saskaitīšanā un Atņemšanā atbildi tagad var arī uzrakstīt ar roku — Izvēlne → Atbilde → Rakstīt.",
