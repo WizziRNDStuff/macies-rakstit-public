@@ -1,0 +1,12 @@
+# Cloudflare Pages headers.
+#
+# The model is delivered as a content-hashed file named in digitnet.manifest.json.
+# Cache the hashed model forever (its URL only changes when the model changes),
+# but keep the manifest revalidated so a retrain is picked up promptly. Rules are
+# applied top-to-bottom; a later match overrides the same header, so the manifest
+# rule below wins for digitnet.manifest.json.
+/digitnet.*.json
+  Cache-Control: public, max-age=31536000, immutable
+
+/digitnet.manifest.json
+  Cache-Control: no-cache

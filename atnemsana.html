@@ -171,12 +171,13 @@
   </div>
 </aside>
 
-<script src="letters.js?v=d181fc8"></script>
-<script src="recognize.js?v=d181fc8"></script>
+<script src="letters.js?v=6a168a0"></script>
+<script src="recognize.js?v=6a168a0"></script>
+<script src="digitnet.js?v=6a168a0"></script>
 <script>
 "use strict";
 (function () {
-  var APPV = "d181fc8";
+  var APPV = "6a168a0";
   var OP = "sub";   // "add" or "sub"
   var aEl = document.getElementById("a"), bEl = document.getElementById("b");
   var ansEl = document.getElementById("ans"), fxEl = document.getElementById("fx");
@@ -340,7 +341,12 @@
     var norm = strokes.map(function (st) {
       return st.map(function (p) { return { x: p.x * k, y: p.y * k }; });
     });
-    if (DigitRecog.recognize(norm, String(ans))) {
+    // trained model (on-device) is primary; geometric recognizer is the union
+    // safety net and the offline fallback when the model hasn't loaded
+    var okc = (typeof DigitNet !== "undefined" && DigitNet.ready &&
+               DigitNet.verify(norm, String(ans)))
+              || DigitRecog.recognize(norm, String(ans));
+    if (okc) {
       onCorrect(String(ans));
     } else {
       // keep the ink on screen so a parent can judge it and, if it's right,
