@@ -32,7 +32,7 @@
   .iconbtn{font-size:clamp(16px,3vmin,22px);line-height:1;font-weight:700;
     padding:clamp(5px,1.2vmin,9px) clamp(9px,1.8vw,14px);
     border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
-    border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;
+    border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;text-decoration:none;
     flex:0 0 auto;touch-action:manipulation;}
   .iconbtn:active{background:var(--ink);color:var(--paper);}
 
@@ -73,6 +73,9 @@
   :root[data-theme="color"] .c7{--accent:#0d9488;}
   :root[data-theme="color"] .c8{--accent:#ca8a04;}
   :root[data-theme="color"] .c9{--accent:#4f46e5;}
+  :root[data-theme="color"] .c10{--accent:#0891b2;}
+  .card .desc{font-size:clamp(11px,2vmin,14px);font-weight:600;color:var(--guide);
+    text-transform:none;letter-spacing:0;line-height:1.3;}
 
   .ver{flex:0 0 auto;text-align:center;color:var(--guide);
     font-size:clamp(11px,1.8vmin,14px);
@@ -118,6 +121,8 @@
   <header>
     <div class="title">Mācāmies! ✏️</div>
     <button class="iconbtn" id="logBtn" aria-label="Jaunumi" title="Jaunumi">🆕</button>
+    <a class="iconbtn" id="fbBtn" href="mailto:info@darbnica.com?subject=Atsauksme%20par%20M%C4%81c%C4%81mies"
+       aria-label="Atsauksmes" title="Atsauksmes">✉️</a>
     <button class="iconbtn" id="themeBtn" aria-label="Ekrāna režīms">◐</button>
   </header>
 
@@ -158,9 +163,14 @@
       <div class="ic">🎨</div>
       <div class="cap">Zīmēt</div>
     </a>
+    <a class="card c10" href="mailto:info@darbnica.com?subject=Atsauksme%20par%20M%C4%81c%C4%81mies">
+      <div class="ic">✉️</div>
+      <div class="cap">Atsauksmes</div>
+      <div class="desc">Ziņo par kļūdām un ieteikumiem</div>
+    </a>
   </main>
 
-  <div class="ver">Versija: 05cf5a4</div>
+  <div class="ver">Versija: 3aebb71</div>
 </div>
 
 <div id="logPop" role="dialog" aria-modal="true" aria-labelledby="logTitle">
@@ -170,7 +180,7 @@
       <button class="iconbtn" id="logClose" aria-label="Aizvērt">✕</button>
     </div>
     <div class="log-body" id="logBody"></div>
-    <div class="log-foot">Versija: 05cf5a4</div>
+    <div class="log-foot">Versija: 3aebb71</div>
   </div>
 </div>
 
