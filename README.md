@@ -4,7 +4,7 @@ Bezmaksas latviešu burtu rakstīšanas treniņš bērniem — velc burtu pa pel
 ēnu ar pirkstu vai pildspalvu. Trīs grūtības līmeņi, visi 33 alfabēta burti,
 lielie un mazie.
 
-**Spēlēt:** https://wizzirndstuff.github.io/macies-rakstit-public/
+**Spēlēt:** https://macibu.darbnica.com
 
 Darbojas planšetē, telefonā un datorā, tieši pārlūkā — nekas nav jāinstalē.
 
