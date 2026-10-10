@@ -1,6 +1,6 @@
 "use strict";
 (function () {
-  var APPV = "7b3619d";   // keep in lockstep with the ?v= cache-buster in index.html
+  var APPV = "f2316bd";   // keep in lockstep with the ?v= cache-buster in index.html
   const guideSvg = document.getElementById("guide");
   const canvas   = document.getElementById("pad");
   const ctx      = canvas.getContext("2d", { willReadFrequently: false });

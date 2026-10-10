@@ -13,7 +13,9 @@
 //   zeme  — 🌍 reads as "pasaule"/"planēta" rather than "zeme"
 //   zupa  — 🍲 is a pot of stew, could be read as "katls"/"ēdiens"
 //
-// Note: 🫐 (oga) is Emoji 13 (2020); fine on Android 11+/iOS 14+.
+// Notes: 🫐 (oga) is Emoji 13 (2020) and 🧊 (ledus) Emoji 12 (2019) — fine on
+// Android 10–11+/iOS 13–14+. pīle/pile and lupa/lūpa train vowel length
+// (ī/i, ū/u), the pairs Latvian readers use for it ("pile – pīle").
 var WORD_PAIRS = [
   [["ola",   "🥚"], ["ota",   "🖌️"]],
   [["oga",   "🫐"], ["ola",   "🥚"]],
@@ -23,4 +25,11 @@ var WORD_PAIRS = [
   [["māja",  "🏠"], ["kāja",  "🦵"]],
   [["lauva", "🦁"], ["laiva", "🛶"]],
   [["auss",  "👂"], ["auns",  "🐏"]],
+  [["cūka",  "🐷"], ["kūka",  "🍰"]],
+  [["zaķis", "🐰"], ["kaķis", "🐱"]],
+  [["ķirsis", "🍒"], ["ķirbis", "🎃"]],
+  [["ledus", "🧊"], ["medus", "🍯"]],
+  [["karote", "🥄"], ["karte", "🗺️"]],
+  [["pīle",  "🦆"], ["pile",  "💧"]],
+  [["lupa",  "🔍"], ["lūpa",  "👄"]],
 ];
