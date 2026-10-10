@@ -10,10 +10,6 @@
     --ink:#000; --paper:#fff; --guide:#9a9a9a;
     --bw:3px; /* border width */
   }
-  /* Colourful (LED/OLED): each activity card gets its own accent */
-  :root[data-theme="color"]{
-    --ink:#3730a3; --paper:#f4f8ff; --guide:#f59e0b;
-  }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;background:var(--paper);color:var(--ink);
     font-family:"Segoe UI",Arial,Helvetica,sans-serif;
@@ -25,16 +21,16 @@
 
   header{display:flex;align-items:center;gap:clamp(8px,2vw,14px);
     padding:clamp(8px,2vmin,16px) clamp(10px,2.5vw,22px);
-    border-bottom:var(--bw) solid var(--ink);flex:0 0 auto;}
+    border-bottom:var(--bw) solid var(--line);flex:0 0 auto;}
   header .title{font-size:clamp(18px,4vmin,30px);font-weight:800;
     letter-spacing:.3px;flex:1 1 auto;min-width:0;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .iconbtn{font-size:clamp(16px,3vmin,22px);line-height:1;font-weight:700;
     padding:clamp(5px,1.2vmin,9px) clamp(9px,1.8vw,14px);
-    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border:var(--bw) solid var(--line);background:var(--paper);color:var(--ink);
     border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;text-decoration:none;
     flex:0 0 auto;touch-action:manipulation;}
-  .iconbtn:active{background:var(--ink);color:var(--paper);}
+  .iconbtn:active{background:var(--sel);color:var(--onsel);}
 
   /* activity cards */
   main{flex:1 1 auto;display:grid;align-content:start;
@@ -63,17 +59,17 @@
     font-weight:700;color:var(--guide);border:2px solid var(--guide);
     border-radius:999px;padding:1px 8px;text-transform:none;letter-spacing:0;}
 
-  /* colourful theme: the reference-style palette, one accent per card */
-  :root[data-theme="color"] .c1{--accent:#16a34a;}
-  :root[data-theme="color"] .c2{--accent:#e11d48;}
-  :root[data-theme="color"] .c3{--accent:#f59e0b;}
-  :root[data-theme="color"] .c4{--accent:#0e7490;}
-  :root[data-theme="color"] .c5{--accent:#9333ea;}
-  :root[data-theme="color"] .c6{--accent:#db2777;}
-  :root[data-theme="color"] .c7{--accent:#0d9488;}
-  :root[data-theme="color"] .c8{--accent:#ca8a04;}
-  :root[data-theme="color"] .c9{--accent:#4f46e5;}
-  :root[data-theme="color"] .c10{--accent:#0891b2;}
+  /* Krāsains + Tumšs: one calm accent per card (border + caption only) */
+  :root[data-theme] .c1{--accent:#4f9d69;}
+  :root[data-theme] .c2{--accent:#d0675f;}
+  :root[data-theme] .c3{--accent:#d39a3a;}
+  :root[data-theme] .c4{--accent:#3f93a8;}
+  :root[data-theme] .c5{--accent:#8f74c4;}
+  :root[data-theme] .c6{--accent:#c96a98;}
+  :root[data-theme] .c7{--accent:#3f9d92;}
+  :root[data-theme] .c8{--accent:#b8932f;}
+  :root[data-theme] .c9{--accent:#6a7bc8;}
+  :root[data-theme] .c10{--accent:#4c95b8;}
   .card .desc{font-size:clamp(11px,2vmin,14px);font-weight:600;color:var(--guide);
     text-transform:none;letter-spacing:0;line-height:1.3;}
 
@@ -86,12 +82,31 @@
   #logPop{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);
     display:none;align-items:center;justify-content:center;
     padding:clamp(10px,4vmin,30px);}
-  #logPop.show{display:flex;}
-  .log-card{background:var(--paper);border:var(--bw) solid var(--ink);
+  #logPop.show,#themePop.show{display:flex;}
+  #themePop{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);
+    display:none;align-items:center;justify-content:center;
+    padding:clamp(10px,4vmin,30px);}
+  .theme-opts{display:grid;grid-template-columns:repeat(3,1fr);
+    gap:clamp(8px,2vmin,14px);padding:clamp(12px,3vmin,20px);}
+  .topt{display:flex;flex-direction:column;align-items:center;gap:8px;
+    padding:clamp(6px,1.4vmin,10px);border:var(--bw) solid var(--line);
+    border-radius:clamp(10px,2vmin,16px);background:var(--paper);color:var(--ink);
+    font:inherit;font-size:clamp(13px,2.4vmin,17px);font-weight:700;
+    cursor:pointer;touch-action:manipulation;}
+  .topt.active{border-color:var(--sel);box-shadow:0 0 0 2px var(--sel);}
+  /* each swatch shows its own theme, whatever is active now */
+  .sw{width:100%;aspect-ratio:4/3;border-radius:clamp(8px,1.6vmin,12px);
+    display:flex;align-items:center;justify-content:center;
+    font:800 clamp(22px,5vmin,36px)/1 "Segoe UI",Arial,Helvetica,sans-serif;}
+  .sw-eink{background:#fff;color:#000;border:3px solid #000;}
+  .sw-color{background:#faf9f6;color:#24282d;border:3px solid #d8d5ce;
+    box-shadow:inset 0 -6px 0 #3a8f87;}
+  .sw-dark{background:#1c1e22;color:#e9e7e2;border:3px solid #3d4148;}
+  .log-card{background:var(--paper);border:var(--bw) solid var(--line);
     border-radius:clamp(10px,2vmin,18px);max-width:min(94vw,520px);width:100%;
     max-height:84vh;display:flex;flex-direction:column;}
   .log-head{display:flex;align-items:center;gap:10px;flex:0 0 auto;
-    border-bottom:var(--bw) solid var(--ink);
+    border-bottom:var(--bw) solid var(--line);
     padding:clamp(10px,2.4vmin,16px) clamp(12px,3vw,20px);}
   .log-head .t{font-size:clamp(17px,3.4vmin,24px);font-weight:800;
     flex:1 1 auto;min-width:0;}
@@ -106,15 +121,12 @@
   .log-group ul{margin:0;padding:0;list-style:none;
     display:flex;flex-direction:column;gap:clamp(6px,1.4vmin,10px);}
   .log-group li{font-size:clamp(13px,2.5vmin,17px);line-height:1.4;}
-  .log-foot{flex:0 0 auto;border-top:var(--bw) solid var(--ink);text-align:center;
+  .log-foot{flex:0 0 auto;border-top:var(--bw) solid var(--line);text-align:center;
     color:var(--guide);font-size:clamp(11px,1.8vmin,14px);
     padding:clamp(8px,2vmin,12px);font-variant-numeric:tabular-nums;}
 </style>
-<script>
-  /* set the theme before first paint so colourful users see no e-ink flash */
-  try { if (localStorage.getItem("lv_theme") === "color")
-          document.documentElement.dataset.theme = "color"; } catch (e) {}
-</script>
+<link rel="stylesheet" href="theme.css?v=9e72b1e">
+<script src="theme.js?v=9e72b1e"></script>
 </head>
 <body>
 <div id="app">
@@ -170,7 +182,7 @@
     </a>
   </main>
 
-  <div class="ver">Versija: 3aebb71</div>
+  <div class="ver">Versija: 9e72b1e</div>
 </div>
 
 <div id="logPop" role="dialog" aria-modal="true" aria-labelledby="logTitle">
@@ -180,26 +192,49 @@
       <button class="iconbtn" id="logClose" aria-label="Aizvērt">✕</button>
     </div>
     <div class="log-body" id="logBody"></div>
-    <div class="log-foot">Versija: 3aebb71</div>
+    <div class="log-foot">Versija: 9e72b1e</div>
+  </div>
+</div>
+
+<div id="themePop" role="dialog" aria-modal="true" aria-labelledby="themeTitle">
+  <div class="log-card">
+    <div class="log-head">
+      <span class="t" id="themeTitle">Ekrāns</span>
+      <button class="iconbtn" id="themeClose" aria-label="Aizvērt">✕</button>
+    </div>
+    <div class="theme-opts">
+      <button class="topt" data-theme-btn="eink"><span class="sw sw-eink">Aa</span>E-tinte</button>
+      <button class="topt" data-theme-btn="color"><span class="sw sw-color">Aa</span>Krāsains</button>
+      <button class="topt" data-theme-btn="dark"><span class="sw sw-dark">Aa</span>Tumšs</button>
+    </div>
   </div>
 </div>
 
 <script>
 "use strict";
 (function () {
-  // same lv_theme key as the tracing screen — one setting, both pages
-  var btn = document.getElementById("themeBtn");
-  btn.addEventListener("click", function () {
-    var color = document.documentElement.dataset.theme !== "color";
-    if (color) document.documentElement.dataset.theme = "color";
-    else document.documentElement.removeAttribute("data-theme");
-    try { localStorage.setItem("lv_theme", color ? "color" : "eink"); } catch (e) {}
-  });
+  // screen picker — theme.js applies + remembers the choice (same lv_theme
+  // key on every page); the popup stays open so the change is visible
+  var themePop = document.getElementById("themePop");
+  function openTheme(open) { themePop.classList.toggle("show", open); }
+  document.getElementById("themeBtn").addEventListener("click", function () { openTheme(true); });
+  document.getElementById("themeClose").addEventListener("click", function () { openTheme(false); });
+  themePop.addEventListener("click", function (e) { if (e.target === themePop) openTheme(false); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") openTheme(false); });
 
   // ---------- changelog / "Jaunumi" ----------
   // Newest first. When you ship something notable, add a line to the top group
   // (or a new group). Kept here so the home screen is the single source.
   var CHANGELOG = [
+    { date: "Oktobris 2026", items: [
+      "✍️ Salīdzini: zīmi <, = vai > var arī uzrakstīt ar roku lodziņā starp skaitļiem — Izvēlne → Atbilde → Rakstīt.",
+      "✍️ Saskaitīšanā, Atņemšanā un Salīdzini: cipari var būt rakstīti ar roku — Izvēlne → Cipari → Rakstīti.",
+      "✍️ Saskaitīšanā un Atņemšanā: “Rakstīt” lodziņš tagad ir tieši aiz “=”, kā uz papīra. Jauns iestatījums Skaitļu izmērs.",
+      "💾 Zīmēt: zīmējumu var saglabāt kā attēlu (💾 poga augšā). Dzēšgumijai jauna ikona.",
+      "✍️ Zilbēs un Vārdos: rakstītiem un drukātiem burtiem jauna izvēle Abc — pirmais burts lielais, pārējie mazie.",
+      "◐ Jauns ekrāna izskats: mierīgāks Krāsains režīms (bez zilganā toņa) un jauns Tumšs režīms. Nospied ◐ sākumā vai Izvēlne → Ekrāns.",
+      "🔤 Zilbēs: 5 līmeņi — no vieglām (MA) līdz grūtām (SKRIE): slēgtās zilbes, divskaņi, līdzskaņu kopas. Izvēlne → Līmenis.",
+    ] },
     { date: "Septembris 2026", items: [
       "📚 Jauns: Lasīt — mazi stāstiņi ar vieglvārdiem, zilbēs sadalīti lasīšanai.",
       "⚖️ Jauns: Salīdzini — salīdzini divus skaitļus: lielāks, mazāks vai vienāds (< = >).",

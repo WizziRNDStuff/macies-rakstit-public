@@ -6,7 +6,6 @@
 <title>Saskaitīšana</title>
 <style>
   :root{ --ink:#000; --paper:#fff; --guide:#9a9a9a; --ok:#0a7d24; --bad:#b00020; --bw:3px; }
-  :root[data-theme="color"]{ --ink:#3730a3; --paper:#f4f8ff; --guide:#f59e0b; --ok:#16a34a; --bad:#e11d48; }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;background:var(--paper);color:var(--ink);
     font-family:"Segoe UI",Arial,Helvetica,sans-serif;overflow:hidden;
@@ -17,25 +16,39 @@
 
   header{display:flex;align-items:center;gap:clamp(8px,2vw,14px);
     padding:clamp(6px,1.6vmin,14px) clamp(10px,2.5vw,22px);
-    border-bottom:var(--bw) solid var(--ink);flex:0 0 auto;}
+    border-bottom:var(--bw) solid var(--line);flex:0 0 auto;}
   header .title{font-size:clamp(16px,3.4vmin,24px);font-weight:800;
     flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   header .score{font-size:clamp(14px,2.8vmin,20px);font-weight:700;white-space:nowrap;
     font-variant-numeric:tabular-nums;flex:0 0 auto;}
   .iconbtn{font-size:clamp(18px,3.4vmin,26px);line-height:1;font-weight:700;
     padding:clamp(4px,1vmin,8px) clamp(8px,1.6vw,12px);
-    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border:var(--bw) solid var(--line);background:var(--paper);color:var(--ink);
     border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;flex:0 0 auto;touch-action:manipulation;}
-  .iconbtn:active,.iconbtn.active{background:var(--ink);color:var(--paper);}
+  .iconbtn:active,.iconbtn.active{background:var(--sel);color:var(--onsel);}
 
   /* equation */
   #stage{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;
     position:relative;padding:clamp(10px,3vmin,28px);}
-  #eq{display:flex;align-items:center;justify-content:center;gap:clamp(8px,2.5vw,26px);
+  /* font-size is set by fitEq() (fits the stage x Skaitļu izmērs); every
+     other measure is in em so the whole equation scales as one piece */
+  #eq{display:flex;align-items:center;justify-content:center;gap:.22em;flex:0 0 auto;
     font-weight:800;font-size:clamp(48px,16vmin,150px);line-height:1;
     font-variant-numeric:tabular-nums;}
-  #ans{min-width:1.1em;text-align:center;border-bottom:clamp(4px,1vmin,8px) solid var(--guide);
+  #a,#b{min-width:1.2em;text-align:center;}   /* 1- or 2-digit: same width */
+  #ans{min-width:1.1em;text-align:center;border-bottom:.06em solid var(--guide);
     color:var(--guide);}
+  /* handwritten numbers (handnum.js): a 1em-tall inline SVG per number,
+     coloured by `color`, so good/bad/guide states work unchanged */
+  #eq > span{display:inline-flex;justify-content:center;align-items:center;}
+  .hn{display:block;height:1em;overflow:visible;fill:none;stroke:currentColor;
+    stroke-width:6.5;stroke-linecap:round;stroke-linejoin:round;}
+  #eq.write #ans{min-width:2.6em;}               /* same footprint as the box */
+  /* write-the-answer box, right after "=" like on paper */
+  #wframe{position:relative;flex:0 0 auto;width:2.6em;height:1.4em;
+    border:var(--bw) dashed var(--guide);border-radius:.16em;
+    background:var(--paper);overflow:hidden;}
+  #wframe.bad{border-color:var(--bad);}
   #ans.good{color:var(--ok);border-color:var(--ok);}
   #ans.bad{color:var(--bad);border-color:var(--bad);}
   /* success / retry tick */
@@ -45,16 +58,16 @@
   #fx.good{color:var(--ok);} #fx.bad{color:var(--bad);}
 
   /* number pad 1..10 */
-  #pad{flex:0 0 auto;border-top:var(--bw) solid var(--ink);
+  #pad{flex:0 0 auto;border-top:var(--bw) solid var(--line);
     padding:clamp(8px,1.8vmin,16px) clamp(8px,2vw,18px);
     display:grid;gap:clamp(6px,1.4vw,12px);
     grid-template-columns:repeat(5,1fr);}
   @media (min-width:620px){ #pad{grid-template-columns:repeat(10,1fr);} }
   .num{font-size:clamp(20px,4.4vmin,34px);font-weight:800;font-variant-numeric:tabular-nums;
-    padding:clamp(10px,2vmin,18px) 0;border:var(--bw) solid var(--ink);
+    padding:clamp(10px,2vmin,18px) 0;border:var(--bw) solid var(--line);
     background:var(--paper);color:var(--ink);border-radius:clamp(9px,1.6vmin,14px);
     cursor:pointer;touch-action:manipulation;}
-  .num:active{background:var(--ink);color:var(--paper);}
+  .num:active{background:var(--sel);color:var(--onsel);}
   .num.wrong{background:var(--bad);border-color:var(--bad);color:var(--paper);}
   .num.right{background:var(--ok);border-color:var(--ok);color:var(--paper);}
 
@@ -63,7 +76,7 @@
     opacity:0;pointer-events:none;transition:opacity .22s ease;}
   #backdrop.open{opacity:1;pointer-events:auto;}
   #menu{position:fixed;top:0;left:0;bottom:0;z-index:20;width:min(88vw,340px);
-    background:var(--paper);border-right:var(--bw) solid var(--ink);
+    background:var(--paper);border-right:var(--bw) solid var(--line);
     display:flex;flex-direction:column;transform:translateX(-100%);visibility:hidden;
     transition:transform .22s ease, visibility 0s linear .22s;}
   #menu.open{transform:translateX(0);visibility:visible;transition:transform .22s ease, visibility 0s;}
@@ -71,17 +84,17 @@
   .menu-head{display:flex;align-items:center;gap:clamp(8px,2vw,14px);flex:0 0 auto;
     padding:clamp(8px,1.8vmin,14px) clamp(10px,2.5vw,18px);
     padding-top:calc(clamp(8px,1.8vmin,14px) + env(safe-area-inset-top));
-    border-bottom:var(--bw) solid var(--ink);}
+    border-bottom:var(--bw) solid var(--line);}
   .menu-head .t{font-size:clamp(15px,3vmin,22px);font-weight:800;flex:1 1 auto;min-width:0;}
   .menu-body{flex:1 1 auto;min-height:0;overflow-y:auto;touch-action:pan-y;
     padding:clamp(10px,2.4vmin,18px);
     padding-bottom:calc(clamp(10px,2.4vmin,18px) + env(safe-area-inset-bottom));
     display:flex;flex-direction:column;gap:clamp(12px,2.6vmin,18px);}
   .cbtn{font-size:clamp(14px,2.4vmin,19px);font-weight:700;text-align:center;text-decoration:none;
-    padding:clamp(9px,1.8vmin,13px) clamp(10px,2vw,16px);border:var(--bw) solid var(--ink);
+    padding:clamp(9px,1.8vmin,13px) clamp(10px,2vw,16px);border:var(--bw) solid var(--line);
     background:var(--paper);color:var(--ink);border-radius:clamp(9px,1.6vmin,13px);
     cursor:pointer;touch-action:manipulation;display:block;}
-  .cbtn:active,.cbtn.active{background:var(--ink);color:var(--paper);}
+  .cbtn:active,.cbtn.active{background:var(--sel);color:var(--onsel);}
   .lbl{font-size:clamp(12px,2vmin,16px);font-weight:700;color:var(--guide);
     text-transform:uppercase;letter-spacing:.5px;}
   .row{display:flex;gap:clamp(6px,1.4vw,10px);}
@@ -91,32 +104,38 @@
 
   /* write-the-answer pad (handwritten, recognised against the expected number) */
   [hidden]{display:none!important;}
-  #writepad{flex:0 0 auto;border-top:var(--bw) solid var(--ink);
+  #writepad{flex:0 0 auto;border-top:var(--bw) solid var(--line);
     display:flex;flex-direction:column;gap:clamp(6px,1.4vmin,12px);
     padding:clamp(8px,1.8vmin,16px) clamp(8px,2vw,18px);}
-  #wframe{position:relative;width:100%;height:clamp(120px,30vh,300px);
-    border:var(--bw) solid var(--ink);border-radius:clamp(10px,2vmin,18px);
-    background:#fff;overflow:hidden;}
   #wcanvas{position:absolute;inset:0;width:100%;height:100%;
     border-radius:inherit;touch-action:none;}
   #wbtns{display:flex;gap:clamp(6px,1.4vw,12px);}
   .wbtn{flex:1 1 0;min-width:0;font-size:clamp(16px,3vmin,24px);font-weight:800;
-    padding:clamp(10px,2vmin,16px) 0;border:var(--bw) solid var(--ink);
+    padding:clamp(10px,2vmin,16px) 0;border:var(--bw) solid var(--line);
     background:var(--paper);color:var(--ink);border-radius:clamp(9px,1.6vmin,14px);
     cursor:pointer;touch-action:manipulation;}
-  .wbtn:active{background:var(--ink);color:var(--paper);}
+  .wbtn:active{background:var(--sel);color:var(--onsel);}
   .wbtn.ok{border-color:var(--ok);color:var(--ok);}
   .wbtn.ok:active{background:var(--ok);color:#fff;}
   /* development disclaimer for the handwriting recognition */
   .hint{font-size:clamp(11px,2vmin,14px);line-height:1.4;color:var(--guide);
     margin:clamp(6px,1.4vmin,10px) 0 0;}
+  /* Skaitļu izmērs slider */
+  #sizeRange{-webkit-appearance:none;appearance:none;background:transparent;
+    touch-action:auto;cursor:pointer;width:100%;height:clamp(20px,3.4vmin,28px);margin:0;}
+  #sizeRange::-webkit-slider-runnable-track{height:var(--bw);background:var(--ink);border-radius:2px;}
+  #sizeRange::-moz-range-track{height:var(--bw);background:var(--ink);border-radius:2px;}
+  #sizeRange::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:clamp(18px,3.2vmin,26px);height:clamp(18px,3.2vmin,26px);border-radius:50%;
+    background:var(--paper);border:var(--bw) solid var(--line);
+    margin-top:calc(var(--bw)/2 - clamp(18px,3.2vmin,26px)/2);}
+  #sizeRange::-moz-range-thumb{width:clamp(18px,3.2vmin,26px);height:clamp(18px,3.2vmin,26px);
+    border-radius:50%;background:var(--paper);border:var(--bw) solid var(--line);box-sizing:border-box;}
   #writepad .whint{font-size:clamp(11px,2vmin,14px);line-height:1.35;
     color:var(--guide);text-align:center;margin:0;}
 </style>
-<script>
-  try { if (localStorage.getItem("lv_theme") === "color")
-          document.documentElement.dataset.theme = "color"; } catch (e) {}
-</script>
+<link rel="stylesheet" href="theme.css?v=9e72b1e">
+<script src="theme.js?v=9e72b1e"></script>
 </head>
 <body>
 <div id="app">
@@ -128,14 +147,14 @@
   <div id="stage">
     <div id="eq">
       <span id="a">0</span><span id="op">+</span><span id="b">0</span>
-      <span>=</span><span id="ans">?</span>
+      <span id="eqs">=</span><span id="ans">?</span>
+      <div id="wframe" hidden><canvas id="wcanvas"></canvas></div>
     </div>
     <div id="fx"></div>
   </div>
   <div id="pad"></div>
   <div id="writepad" hidden>
-    <div class="whint">Uzraksti atbildi un nospied ✓ Pārbaudīt. Atpazīšana vēl top — ja pareizu ciparu neatpazīst, spied Tālāk ▶.</div>
-    <div id="wframe"><canvas id="wcanvas"></canvas></div>
+    <div class="whint">Uzraksti atbildi lodziņā aiz “=” un nospied ✓ Pārbaudīt. Atpazīšana vēl top — ja pareizu ciparu neatpazīst, spied Tālāk ▶.</div>
     <div id="wbtns">
       <button class="wbtn" id="wclear" type="button">Dzēst</button>
       <button class="wbtn ok" id="wcheck" type="button">✓ Pārbaudīt</button>
@@ -169,23 +188,38 @@
       <p class="hint">⚠️ “Rakstīt”: cipara atpazīšana vēl top — reizēm pareizu ciparu var neatpazīt. Ja atbilde ir pareiza, bet netiek atpazīta, spied “Tālāk ▶”, lai turpinātu.</p>
     </div>
     <div>
+      <span class="lbl">Cipari</span>
+      <div class="row" style="margin-top:8px">
+        <button class="cbtn" data-hand="0">Drukāti</button>
+        <button class="cbtn" data-hand="1">Rakstīti</button>
+      </div>
+    </div>
+    <div>
+      <span class="lbl">Skaitļu izmērs</span>
+      <div class="row" style="margin-top:8px">
+        <input type="range" id="sizeRange" min="50" max="100" step="5" value="100" aria-label="Skaitļu izmērs">
+      </div>
+    </div>
+    <div>
       <span class="lbl">Ekrāns</span>
       <div class="row" style="margin-top:8px">
         <button class="cbtn" data-theme-btn="eink">E-tinte</button>
         <button class="cbtn" data-theme-btn="color">Krāsains</button>
+        <button class="cbtn" data-theme-btn="dark">Tumšs</button>
       </div>
     </div>
     <div class="ver" id="appVer"></div>
   </div>
 </aside>
 
-<script src="letters.js?v=3aebb71"></script>
-<script src="recognize.js?v=3aebb71"></script>
-<script src="digitnet.js?v=3aebb71"></script>
+<script src="letters.js?v=9e72b1e"></script>
+<script src="handnum.js?v=9e72b1e"></script>
+<script src="recognize.js?v=9e72b1e"></script>
+<script src="digitnet.js?v=9e72b1e"></script>
 <script>
 "use strict";
 (function () {
-  var APPV = "3aebb71";
+  var APPV = "9e72b1e";
   var OP = "add";   // "add" or "sub"
   var aEl = document.getElementById("a"), bEl = document.getElementById("b");
   var ansEl = document.getElementById("ans"), fxEl = document.getElementById("fx");
@@ -219,10 +253,11 @@
       key = a + "_" + b;
     } while (key === lastKey && ++guard < 8);   // avoid immediate repeat
     lastKey = key;
-    aEl.textContent = a; bEl.textContent = b;
-    ansEl.textContent = "?"; ansEl.className = "";
+    HandNum.put(aEl, a); HandNum.put(bEl, b);
+    HandNum.put(ansEl, "?"); ansEl.className = "";
     busy = false;
     clearWrite();
+    showBox(true);
   }
 
   function flash(el, cls, ms) {
@@ -234,13 +269,14 @@
   function onCorrect(shown) {
     busy = true;
     correct++; scoreEl.textContent = "✓ " + correct;
-    ansEl.textContent = shown; ansEl.className = "good";
+    showBox(false);   // write mode: the box gives way to the green answer
+    HandNum.put(ansEl, shown); ansEl.className = "good";
     fxEl.textContent = "✓"; fxEl.className = "show good";
     beep(660);
     setTimeout(function () { fxEl.className = ""; newProblem(); }, 900);
   }
   function onWrong() {
-    flash(ansEl, "bad", 400);
+    flash(wframe.hidden ? ansEl : wframe, "bad", 400);
     fxEl.textContent = "✗"; fxEl.className = "show bad";
     setTimeout(function () { fxEl.className = ""; }, 500);
     beep(150);
@@ -291,6 +327,8 @@
   // (the 1..10 row) vs Rakstīt (write it).
   var mode = localStorage.getItem("lv_math_answer") === "write" ? "write" : "choose";
   var writepad = document.getElementById("writepad");
+  var wframe = document.getElementById("wframe");
+  var eqEl = document.getElementById("eq");
   var wcanvas = document.getElementById("wcanvas");
   var wctx = wcanvas.getContext("2d");
   var wink = [], wcur = null, wdrawing = false, wpid = null, wptype = "", wlast = null;
@@ -325,6 +363,15 @@
     wctx.strokeStyle = penColor();
     wink.forEach(drawWStroke);
     if (wcur) drawWStroke(wcur);
+  }
+  // write mode: the box sits right after "=" while answering; the ? / answer
+  // text takes its place for the verdict. Choose mode: always the text.
+  function showBox(writing) {
+    var box = (mode === "write" && writing);
+    var was = !wframe.hidden;
+    wframe.hidden = !box;
+    ansEl.hidden = box;
+    if (box && !was) sizeWCanvas();
   }
   function clearWrite() {
     wink = []; wcur = null; wdrawing = false;
@@ -369,7 +416,7 @@
   function checkWritten() {
     if (busy) return;
     var strokes = wink.filter(function (s) { return s && s.length > 1; });
-    if (!strokes.length) { flash(ansEl, "bad", 250); return; }
+    if (!strokes.length) { flash(wframe, "bad", 250); return; }
     // uniform-scale ink into ~0..100 so recognize.js's size gates line up
     var k = 100 / (wCssH || 1);
     var norm = strokes.map(function (st) {
@@ -394,7 +441,8 @@
     if (busy) return;
     busy = true;
     fxEl.className = "";
-    ansEl.textContent = String(ans); ansEl.className = "";   // neutral reveal
+    showBox(false);
+    HandNum.put(ansEl, ans); ansEl.className = "";   // neutral reveal
     setTimeout(newProblem, 1000);
   }
   document.getElementById("wclear").addEventListener("click", clearWrite);
@@ -409,8 +457,10 @@
     });
     pad.hidden = (mode !== "choose");
     writepad.hidden = (mode !== "write");
+    eqEl.classList.toggle("write", mode === "write");
     clearWrite();
-    if (mode === "write") setTimeout(sizeWCanvas, 30);
+    showBox(!busy);
+    fitEq();
   }
   document.querySelectorAll("[data-mode]").forEach(function (b) {
     b.addEventListener("click", function () { setMode(b.dataset.mode); });
@@ -454,26 +504,56 @@
 
   // theme
   function applyTheme() {
-    var color = localStorage.getItem("lv_theme") === "color";
-    if (color) document.documentElement.dataset.theme = "color";
-    else document.documentElement.removeAttribute("data-theme");
-    document.querySelectorAll("[data-theme-btn]").forEach(function (b) {
-      b.classList.toggle("active", (b.dataset.themeBtn === "color") === color);
-    });
+    LVTheme.apply();   // data-theme + active buttons (theme.js)
     if (mode === "write") redrawWink();   // pen colour follows the theme
   }
-  document.querySelectorAll("[data-theme-btn]").forEach(function (b) {
-    b.addEventListener("click", function () {
-      localStorage.setItem("lv_theme", b.dataset.themeBtn === "color" ? "color" : "eink");
-      applyTheme();
+  document.addEventListener("lvtheme", applyTheme);   // theme.js handles the buttons
+
+  // Skaitļu izmērs: 100% = the equation as big as fits the stage (like the
+  // letter size slider), smaller values scale it down. Shared add/sub key.
+  var stageEl = document.getElementById("stage");
+  var sizeRange = document.getElementById("sizeRange");
+  var sizeV = parseInt(localStorage.getItem("lv_math_size") || "100", 10);
+  if (!(sizeV >= 50 && sizeV <= 100)) sizeV = 100;
+  sizeRange.value = sizeV;
+  sizeRange.addEventListener("input", function () {
+    sizeV = parseInt(sizeRange.value, 10);
+    localStorage.setItem("lv_math_size", String(sizeV));
+    fitEq();
+  });
+  function fitEq() {
+    var ss = getComputedStyle(stageEl);
+    var aw = stageEl.clientWidth - parseFloat(ss.paddingLeft) - parseFloat(ss.paddingRight);
+    var ah = stageEl.clientHeight - parseFloat(ss.paddingTop) - parseFloat(ss.paddingBottom);
+    if (aw < 10 || ah < 10) return;
+    eqEl.style.fontSize = "100px";                 // measure at a known size
+    var r = eqEl.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) return;
+    var fs = Math.min(100 * aw * 0.96 / r.width, 100 * ah * 0.9 / r.height, 220);
+    fs = Math.max(20, fs * sizeV / 100);
+    eqEl.style.fontSize = Math.floor(fs) + "px";
+    if (!wframe.hidden) sizeWCanvas();
+  }
+
+  // Cipari: printed (font) or handwritten (the user's recorded digits).
+  // Shared key lv_num_hand across Saskaitīšana, Atņemšana and Salīdzini.
+  function setHand(on) {
+    try { localStorage.setItem("lv_num_hand", on ? "1" : "0"); } catch (e) {}
+    document.querySelectorAll("[data-hand]").forEach(function (b) {
+      b.classList.toggle("active", (b.dataset.hand === "1") === on);
     });
+    HandNum.rerender([aEl, document.getElementById("op"), bEl, document.getElementById("eqs"), ansEl]);
+    fitEq()   // handwritten widths differ — refit;
+  }
+  document.querySelectorAll("[data-hand]").forEach(function (b) {
+    b.addEventListener("click", function () { setHand(b.dataset.hand === "1"); });
   });
 
   // JS-measured height + canvas sizing (dvh over-reports on some e-ink tablets)
   function layout() {
     var vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
     document.getElementById("app").style.height = Math.round(vh) + "px";
-    if (mode === "write") sizeWCanvas();
+    fitEq();
   }
   var rzTimer = null;
   function onResize() { clearTimeout(rzTimer); rzTimer = setTimeout(layout, 150); }
@@ -484,6 +564,9 @@
 
   document.getElementById("appVer").textContent = "Versija: " + APPV;
   applyTheme();
+  HandNum.put(document.getElementById("op"), document.getElementById("op").textContent);
+  HandNum.put(document.getElementById("eqs"), "=");
+  setHand(HandNum.on());
   setMode(mode);
   layout();
   setRange(rangeKey);   // builds the pad + first problem for the saved range

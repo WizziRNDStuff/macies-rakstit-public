@@ -1,0 +1,42 @@
+/* Shared screen themes. One setting (localStorage lv_theme), every page.
+ *
+ *   (none)  E-tinte  — each page's own :root: pure black on white, 3px lines.
+ *   color   Krāsains — warm neutral paper (no blue tint), charcoal text,
+ *                      soft grey lines (same 3px thickness as E-tinte), one calm teal for selection/guides.
+ *                      Colour stays in the chrome; the letters are ink.
+ *   dark    Tumšs    — dark grey (not pure black), warm off-white text.
+ *
+ * --line (borders) and --sel/--onsel (selected/pressed fill) are defined
+ * here only; in E-tinte they fall back to the page's ink/paper.
+ */
+:root{ --line:var(--ink); --sel:var(--ink); --onsel:var(--paper); }
+
+:root[data-theme="color"]{
+  --ink:#24282d; --paper:#faf9f6; --line:#d8d5ce;
+  --guide:#3a8f87; --faint:#efd9b4; --rule:#e6e3dc;
+  --scrim:rgba(250,249,246,.85);
+  --ok:#2f8f4e; --bad:#cc4b4b;
+  --sel:#3a8f87; --onsel:#ffffff;
+  --board:#ffffff;
+  color-scheme:light;
+}
+
+:root[data-theme="dark"]{
+  --ink:#e9e7e2; --paper:#1c1e22; --line:#3d4148;
+  --guide:#7cc1b8; --faint:#4d4436; --rule:#2e3137;
+  --scrim:rgba(28,30,34,.85);
+  --ok:#64c482; --bad:#f07a7a;
+  --sel:#7cc1b8; --onsel:#13201e;
+  --board:#ffffff;
+  color-scheme:dark;
+}
+
+/* Ekrāns row in the drawers: three buttons share one row, so keep each label
+   on one line and inside its box ("E-tinte" used to wrap at the hyphen and
+   "Krāsains" overflowed). Attribute selector outranks each page's .cbtn. */
+.cbtn[data-theme-btn]{
+  flex:1 1 0; min-width:0; white-space:nowrap;
+  padding-left:4px; padding-right:4px;
+  font-size:clamp(12px,2.1vmin,16px);
+  overflow:hidden; text-overflow:ellipsis;
+}

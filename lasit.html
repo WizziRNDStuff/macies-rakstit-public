@@ -4,9 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Lasīt</title>
+<script src="theme.js?v=9e72b1e"></script>
 <style>
-  /* reading is always black on white — no colour theme here */
+  /* reading is black on white — no colour theme here; only Tumšs (dark)
+     flips it, so a dark-mode reader isn't hit by a white page */
   :root{ --ink:#000; --paper:#fff; --guide:#9a9a9a; --bw:3px; }
+  :root[data-theme="dark"]{ --ink:#e9e7e2; --paper:#1c1e22; --guide:#8b9097; color-scheme:dark; }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;background:var(--paper);color:var(--ink);
     font-family:"Segoe UI",Arial,Helvetica,sans-serif;overflow:hidden;
@@ -115,7 +118,7 @@
 <script>
 "use strict";
 (function () {
-  var APPV = "3aebb71";
+  var APPV = "9e72b1e";
 
   // Short easy-Latvian stories; words split into syllables with "-" for early
   // readers (same style as the reference readers, original texts).

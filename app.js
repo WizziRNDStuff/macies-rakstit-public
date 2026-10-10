@@ -1,6 +1,6 @@
 "use strict";
 (function () {
-  var APPV = "3aebb71";   // keep in lockstep with the ?v= cache-buster in index.html
+  var APPV = "9e72b1e";   // keep in lockstep with the ?v= cache-buster in index.html
   const guideSvg = document.getElementById("guide");
   const canvas   = document.getElementById("pad");
   const ctx      = canvas.getContext("2d", { willReadFrequently: false });
@@ -160,7 +160,7 @@
     applyInkColor();
   }
 
-  // pen colour = the theme's --ink (indigo in colourful, black in e-ink)
+  // pen colour = the theme's --ink (black / charcoal / off-white)
   function applyInkColor() {
     ctx.strokeStyle = getComputedStyle(document.documentElement)
       .getPropertyValue("--ink").trim() || "#000";
@@ -915,7 +915,8 @@
     ekrans: { t: "Ekrāns", p: [
       "Izvēlies ekrāna režīmu.",
       "E-tinte — augsts kontrasts, melns uz balta. Piemērots e-tintes (E-ink) planšetēm.",
-      "Krāsains — dzīvīgas krāsas parastiem (LED/OLED) ekrāniem.",
+      "Krāsains — mierīgas krāsas parastiem (LED/OLED) ekrāniem.",
+      "Tumšs — gaiši burti uz tumša fona, vakaram un tumšai telpai.",
     ]},
   };
   const infoPop   = document.getElementById("infoPop");
@@ -944,24 +945,14 @@
     if (e.target === infoPop) infoPop.classList.remove("show");
   });
 
-  // ---------- display theme (E-ink vs colourful) ----------
-  // The inline <head> script already set data-theme before first paint;
-  // here we sync the toggle buttons and the canvas pen colour.
-  let theme = localStorage.getItem("lv_theme") === "color" ? "color" : "eink";
+  // ---------- display theme (E-tinte / Krāsains / Tumšs) ----------
+  // theme.js set data-theme before first paint and handles the buttons;
+  // here we only keep the canvas pen colour in step with --ink.
   function applyTheme() {
-    if (theme === "color") document.documentElement.dataset.theme = "color";
-    else document.documentElement.removeAttribute("data-theme");
-    document.querySelectorAll("[data-theme-btn]").forEach(b =>
-      b.classList.toggle("active", b.dataset.themeBtn === theme));
+    LVTheme.apply();
     applyInkColor();
   }
-  document.querySelectorAll("[data-theme-btn]").forEach(b => {
-    b.addEventListener("click", () => {
-      theme = b.dataset.themeBtn === "color" ? "color" : "eink";
-      localStorage.setItem("lv_theme", theme);
-      applyTheme();
-    });
-  });
+  document.addEventListener("lvtheme", applyTheme);
 
   // ---------- letter picker ----------
   const picker      = document.getElementById("picker");

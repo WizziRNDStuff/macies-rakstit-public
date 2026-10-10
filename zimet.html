@@ -10,10 +10,6 @@
     --ink:#000; --paper:#fff; --guide:#9a9a9a;
     --board:#fff; --bw:3px;
   }
-  :root[data-theme="color"]{
-    --ink:#3730a3; --paper:#f4f8ff; --guide:#f59e0b;
-    --board:#ffffff;
-  }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;background:var(--paper);color:var(--ink);
     font-family:"Segoe UI",Arial,Helvetica,sans-serif;overflow:hidden;
@@ -25,22 +21,22 @@
 
   header{display:flex;align-items:center;gap:clamp(8px,2vw,14px);
     padding:clamp(6px,1.6vmin,14px) clamp(10px,2.5vw,22px);
-    border-bottom:var(--bw) solid var(--ink);flex:0 0 auto;}
+    border-bottom:var(--bw) solid var(--line);flex:0 0 auto;}
   header .title{font-size:clamp(15px,3.4vmin,24px);font-weight:700;
     letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     flex:1 1 auto;min-width:0;}
   .iconbtn{font-size:clamp(18px,3.4vmin,26px);line-height:1;font-weight:700;
     padding:clamp(4px,1vmin,8px) clamp(8px,1.6vw,12px);
-    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border:var(--bw) solid var(--line);background:var(--paper);color:var(--ink);
     border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;
     min-width:0;flex:0 0 auto;touch-action:manipulation;}
-  .iconbtn:active,.iconbtn.active{background:var(--ink);color:var(--paper);}
+  .iconbtn:active,.iconbtn.active{background:var(--sel);color:var(--onsel);}
 
   /* ---- toolbar ---- */
   #tools{display:flex;flex-wrap:wrap;align-items:center;
     gap:clamp(6px,1.4vw,12px);flex:0 0 auto;
     padding:clamp(6px,1.4vmin,12px) clamp(8px,2vw,18px);
-    border-bottom:var(--bw) solid var(--ink);}
+    border-bottom:var(--bw) solid var(--line);}
   #tools .grp{display:flex;align-items:center;gap:clamp(4px,1vw,8px);
     flex-wrap:wrap;}
   #tools .sep{width:var(--bw);align-self:stretch;background:var(--ink);
@@ -48,15 +44,15 @@
   /* tool + action buttons */
   .tbtn{font-size:clamp(16px,2.8vmin,22px);line-height:1;font-weight:700;
     padding:clamp(6px,1.3vmin,11px) clamp(8px,1.6vw,13px);
-    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border:var(--bw) solid var(--line);background:var(--paper);color:var(--ink);
     border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;
     touch-action:manipulation;min-width:0;}
-  .tbtn:active,.tbtn.active{background:var(--ink);color:var(--paper);}
+  .tbtn:active,.tbtn.active{background:var(--sel);color:var(--onsel);}
   /* colour swatches */
   .sw{width:clamp(26px,5vmin,38px);height:clamp(26px,5vmin,38px);
-    border-radius:50%;border:var(--bw) solid var(--ink);cursor:pointer;
+    border-radius:50%;border:var(--bw) solid var(--line);cursor:pointer;
     padding:0;touch-action:manipulation;position:relative;flex:0 0 auto;}
-  .sw.active{outline:clamp(3px,.9vmin,5px) solid var(--ink);
+  .sw.active{outline:clamp(3px,.9vmin,5px) solid var(--line);
     outline-offset:2px;}
   .sw.white{border-color:var(--guide);}
   /* the custom-colour chip wraps a native colour input */
@@ -78,17 +74,17 @@
   #sizeRange::-moz-range-track{height:var(--bw);background:var(--ink);border-radius:2px;}
   #sizeRange::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
     width:clamp(18px,3.2vmin,26px);height:clamp(18px,3.2vmin,26px);
-    border-radius:50%;background:var(--paper);border:var(--bw) solid var(--ink);
+    border-radius:50%;background:var(--paper);border:var(--bw) solid var(--line);
     margin-top:calc(var(--bw) / 2 - clamp(18px,3.2vmin,26px) / 2);}
   #sizeRange::-moz-range-thumb{width:clamp(18px,3.2vmin,26px);
     height:clamp(18px,3.2vmin,26px);border-radius:50%;background:var(--paper);
-    border:var(--bw) solid var(--ink);box-sizing:border-box;}
+    border:var(--bw) solid var(--line);box-sizing:border-box;}
 
   /* ---- drawing surface ---- */
   #stage{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;
     justify-content:stretch;position:relative;padding:clamp(6px,1.6vmin,16px);}
   #frame{position:relative;flex:1 1 auto;
-    border:var(--bw) solid var(--ink);border-radius:clamp(10px,2vmin,20px);
+    border:var(--bw) solid var(--line);border-radius:clamp(10px,2vmin,20px);
     background:var(--board);overflow:hidden;}
   #frame canvas{position:absolute;inset:0;width:100%;height:100%;
     border-radius:inherit;touch-action:none;}
@@ -99,7 +95,7 @@
   #backdrop.open{opacity:1;pointer-events:auto;}
   #menu{position:fixed;top:0;left:0;bottom:0;z-index:20;
     width:min(88vw,340px);background:var(--paper);
-    border-right:var(--bw) solid var(--ink);
+    border-right:var(--bw) solid var(--line);
     display:flex;flex-direction:column;
     transform:translateX(-100%);visibility:hidden;
     transition:transform .22s ease, visibility 0s linear .22s;}
@@ -109,7 +105,7 @@
   .menu-head{display:flex;align-items:center;gap:clamp(8px,2vw,14px);
     flex:0 0 auto;padding:clamp(8px,1.8vmin,14px) clamp(10px,2.5vw,18px);
     padding-top:calc(clamp(8px,1.8vmin,14px) + env(safe-area-inset-top));
-    border-bottom:var(--bw) solid var(--ink);}
+    border-bottom:var(--bw) solid var(--line);}
   .menu-head .t{font-size:clamp(15px,3vmin,22px);font-weight:800;
     flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis;}
@@ -130,17 +126,23 @@
     font-variant-numeric:tabular-nums;}
   .cbtn{font-size:clamp(13px,2.2vmin,18px);font-weight:700;
     padding:clamp(5px,1vmin,9px) clamp(10px,2vw,18px);
-    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border:var(--bw) solid var(--line);background:var(--paper);color:var(--ink);
     border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;touch-action:manipulation;}
-  .cbtn:active,.cbtn.active{background:var(--ink);color:var(--paper);}
+  .cbtn:active,.cbtn.active{background:var(--sel);color:var(--onsel);}
 
   @media (max-width:520px){ header .title{font-size:clamp(13px,4.4vw,18px);} }
+  /* drawn eraser icon (the 🧽 emoji read as a sponge) */
+  .tbtn .ico{display:block;width:1.2em;height:1.2em;}
+  /* "saved" note */
+  #toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));
+    transform:translateX(-50%);z-index:50;pointer-events:none;
+    background:var(--paper);color:var(--ink);border:var(--bw) solid var(--line);
+    border-radius:999px;padding:8px 18px;font-weight:700;
+    font-size:clamp(14px,2.6vmin,18px);opacity:0;transition:opacity .2s ease;}
+  #toast.show{opacity:1;}
 </style>
-<script>
-  /* set the theme before first paint so colourful users see no e-ink flash */
-  try { if (localStorage.getItem("lv_theme") === "color")
-          document.documentElement.dataset.theme = "color"; } catch (e) {}
-</script>
+<link rel="stylesheet" href="theme.css?v=9e72b1e">
+<script src="theme.js?v=9e72b1e"></script>
 </head>
 <body>
 <div id="app">
@@ -148,6 +150,7 @@
     <button class="iconbtn" id="menuBtn" aria-label="Iestatījumi"
             aria-controls="menu" aria-expanded="false">☰</button>
     <div class="title">Zīmēt 🎨</div>
+    <button class="iconbtn" id="saveBtn" aria-label="Saglabāt zīmējumu" title="Saglabāt">💾</button>
     <button class="iconbtn" id="undoBtn" aria-label="Atsaukt">↶</button>
     <button class="iconbtn" id="clearBtn" aria-label="Dzēst visu">🗑️</button>
   </header>
@@ -158,7 +161,11 @@
       <button class="tbtn"        data-tool="marker" aria-label="Flomāsters" title="Flomāsters">🖊️</button>
       <button class="tbtn"        data-tool="pencil" aria-label="Zīmulis" title="Zīmulis">✏️</button>
       <button class="tbtn"        data-tool="brush"  aria-label="Ota" title="Ota">🖌️</button>
-      <button class="tbtn"        data-tool="eraser" aria-label="Dzēšgumija" title="Dzēšgumija">🧽</button>
+      <button class="tbtn"        data-tool="eraser" aria-label="Dzēšgumija" title="Dzēšgumija"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+        <g transform="rotate(-40 12 12)" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">
+          <rect x="3" y="8" width="18" height="8" rx="2" fill="#ffffff"/>
+          <path d="M10 8H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h5z" fill="#f472b6"/>
+        </g></svg></button>
     </div>
     <div class="sep"></div>
     <div class="grp" id="colorGrp"><!-- swatches injected --></div>
@@ -178,6 +185,7 @@
   </div>
 </div>
 
+<div id="toast" role="status" aria-live="polite"></div>
 <div id="backdrop"></div>
 <aside id="menu" aria-labelledby="menuTitle">
   <div class="menu-head">
@@ -191,11 +199,13 @@
       <div class="row">
         <button class="cbtn" data-theme-btn="eink">E-tinte</button>
         <button class="cbtn" data-theme-btn="color">Krāsains</button>
+        <button class="cbtn" data-theme-btn="dark">Tumšs</button>
       </div>
     </div>
     <div class="grp">
       <div class="row"><span class="lbl">Zīmējums</span></div>
       <div class="row">
+        <button class="cbtn" id="saveBtn2">💾 Saglabāt</button>
         <button class="cbtn" id="clearBtn2">🗑️ Dzēst visu</button>
       </div>
     </div>
@@ -206,7 +216,7 @@
 <script>
 "use strict";
 (function () {
-  var APPV = "3aebb71";   // deploy.sh stamps the "3aebb71" string with the git short hash
+  var APPV = "9e72b1e";   // deploy.sh stamps the "9e72b1e" string with the git short hash
 
   var frame = document.getElementById("frame");
   var board = document.getElementById("board");   // committed drawing
@@ -440,6 +450,42 @@
     bctx.clearRect(0, 0, board.width, board.height);
   }
 
+  // ---------- save as PNG ----------
+  // Flattened onto white (erased areas are transparent on the board), named
+  // zimejums-YYYY-MM-DD-HHMM.png, downloaded straight to the device. Nothing
+  // leaves the device.
+  var toastEl = document.getElementById("toast"), toastT = null;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastT);
+    toastT = setTimeout(function () { toastEl.classList.remove("show"); }, 2200);
+  }
+  function saveDrawing() {
+    var out = document.createElement("canvas");
+    out.width = board.width; out.height = board.height;
+    var o = out.getContext("2d");
+    o.fillStyle = "#ffffff";
+    o.fillRect(0, 0, out.width, out.height);
+    o.drawImage(board, 0, 0);
+    var d = new Date();
+    function two(n) { return (n < 10 ? "0" : "") + n; }
+    var name = "zimejums-" + d.getFullYear() + "-" + two(d.getMonth() + 1) + "-" + two(d.getDate()) +
+               "-" + two(d.getHours()) + two(d.getMinutes()) + ".png";
+    function deliver(href, revoke) {
+      var a = document.createElement("a");
+      a.href = href; a.download = name;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      if (revoke) setTimeout(function () { URL.revokeObjectURL(href); }, 4000);
+      toast("💾 Saglabāts: " + name);
+    }
+    if (out.toBlob) out.toBlob(function (blob) {
+      if (blob) deliver(URL.createObjectURL(blob), true);
+      else deliver(out.toDataURL("image/png"), false);
+    }, "image/png");
+    else deliver(out.toDataURL("image/png"), false);
+  }
+
   // ---------- tool / colour / size UI ----------
   function setTool(t) {
     tool = t;
@@ -527,6 +573,10 @@
 
   document.getElementById("undoBtn").addEventListener("click", undo);
   document.getElementById("clearBtn").addEventListener("click", clearBoard);
+  document.getElementById("saveBtn").addEventListener("click", saveDrawing);
+  document.getElementById("saveBtn2").addEventListener("click", function () {
+    setMenu(false); saveDrawing();
+  });
   document.getElementById("clearBtn2").addEventListener("click", function () {
     clearBoard(); setMenu(false);
   });
@@ -556,22 +606,11 @@
   });
 
   // ---------- theme ----------
-  var theme = localStorage.getItem("lv_theme") === "color" ? "color" : "eink";
   function applyTheme() {
-    if (theme === "color") document.documentElement.dataset.theme = "color";
-    else document.documentElement.removeAttribute("data-theme");
-    document.querySelectorAll("[data-theme-btn]").forEach(function (b) {
-      b.classList.toggle("active", b.dataset.themeBtn === theme);
-    });
+    LVTheme.apply();   // data-theme + active buttons (theme.js)
     updateSizeDot();
   }
-  document.querySelectorAll("[data-theme-btn]").forEach(function (b) {
-    b.addEventListener("click", function () {
-      theme = b.dataset.themeBtn === "color" ? "color" : "eink";
-      localStorage.setItem("lv_theme", theme);
-      applyTheme();
-    });
-  });
+  document.addEventListener("lvtheme", applyTheme);   // theme.js handles the buttons
 
   // ---------- resize ----------
   var rzTimer = null;

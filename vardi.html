@@ -8,7 +8,6 @@
   :root{
     --ink:#000; --paper:#fff; --guide:#9a9a9a; --bw:3px;
   }
-  :root[data-theme="color"]{ --ink:#3730a3; --paper:#f4f8ff; --guide:#f59e0b; }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;background:var(--paper);color:var(--ink);
     font-family:"Segoe UI",Arial,Helvetica,sans-serif;overflow:hidden;
@@ -20,34 +19,34 @@
 
   header{display:flex;align-items:center;gap:clamp(8px,2vw,14px);
     padding:clamp(6px,1.6vmin,14px) clamp(10px,2.5vw,22px);
-    border-bottom:var(--bw) solid var(--ink);flex:0 0 auto;}
+    border-bottom:var(--bw) solid var(--line);flex:0 0 auto;}
   header .title{font-size:clamp(16px,3.4vmin,24px);font-weight:800;
     flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   header .prog{font-size:clamp(13px,2.6vmin,20px);font-weight:700;
     white-space:nowrap;font-variant-numeric:tabular-nums;flex:0 0 auto;}
   .iconbtn{font-size:clamp(18px,3.4vmin,26px);line-height:1;font-weight:700;
     padding:clamp(4px,1vmin,8px) clamp(8px,1.6vw,12px);
-    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border:var(--bw) solid var(--line);background:var(--paper);color:var(--ink);
     border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;flex:0 0 auto;
     touch-action:manipulation;}
-  .iconbtn:active,.iconbtn.active{background:var(--ink);color:var(--paper);}
+  .iconbtn:active,.iconbtn.active{background:var(--sel);color:var(--onsel);}
 
   /* action bar (top, so a resting wrist can't hit it — same as raksti) */
   #actionbar{display:flex;flex-wrap:nowrap;gap:clamp(6px,1.2vw,14px);
     align-items:center;justify-content:center;
     padding:clamp(8px,1.6vmin,14px) clamp(6px,1.5vw,18px);
-    border-bottom:var(--bw) solid var(--ink);flex:0 0 auto;}
+    border-bottom:var(--bw) solid var(--line);flex:0 0 auto;}
   #actionbar button{flex:1 1 0;min-width:0;white-space:nowrap;
     font-size:clamp(14px,2.6vmin,22px);font-weight:700;
     padding:clamp(9px,1.6vmin,14px) clamp(6px,1.5vw,18px);
-    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border:var(--bw) solid var(--line);background:var(--paper);color:var(--ink);
     border-radius:clamp(9px,1.6vmin,14px);cursor:pointer;touch-action:manipulation;}
-  #actionbar button:active{background:var(--ink);color:var(--paper);}
+  #actionbar button:active{background:var(--sel);color:var(--onsel);}
 
   #stage{flex:1 1 auto;min-height:0;display:flex;align-items:center;
     justify-content:center;padding:clamp(12px,3vmin,30px);}
   /* the syllable card — bordered like the reference, accent per syllable */
-  #card{--accent:var(--ink);
+  #card{--accent:var(--line);
     width:min(94%,640px);border:var(--bw) solid var(--accent);
     border-radius:clamp(14px,3vmin,26px);background:var(--paper);
     padding:clamp(8px,2vmin,20px);
@@ -69,7 +68,7 @@
     opacity:0;pointer-events:none;transition:opacity .22s ease;}
   #backdrop.open{opacity:1;pointer-events:auto;}
   #menu{position:fixed;top:0;left:0;bottom:0;z-index:20;width:min(88vw,340px);
-    background:var(--paper);border-right:var(--bw) solid var(--ink);
+    background:var(--paper);border-right:var(--bw) solid var(--line);
     display:flex;flex-direction:column;transform:translateX(-100%);
     visibility:hidden;transition:transform .22s ease, visibility 0s linear .22s;}
   #menu.open{transform:translateX(0);visibility:visible;
@@ -78,7 +77,7 @@
   .menu-head{display:flex;align-items:center;gap:clamp(8px,2vw,14px);flex:0 0 auto;
     padding:clamp(8px,1.8vmin,14px) clamp(10px,2.5vw,18px);
     padding-top:calc(clamp(8px,1.8vmin,14px) + env(safe-area-inset-top));
-    border-bottom:var(--bw) solid var(--ink);}
+    border-bottom:var(--bw) solid var(--line);}
   .menu-head .t{font-size:clamp(15px,3vmin,22px);font-weight:800;flex:1 1 auto;
     min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .menu-body{flex:1 1 auto;min-height:0;overflow-y:auto;touch-action:pan-y;
@@ -87,10 +86,10 @@
     display:flex;flex-direction:column;gap:clamp(12px,2.6vmin,18px);}
   .cbtn{font-size:clamp(14px,2.4vmin,19px);font-weight:700;text-align:center;
     text-decoration:none;padding:clamp(9px,1.8vmin,13px) clamp(10px,2vw,16px);
-    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border:var(--bw) solid var(--line);background:var(--paper);color:var(--ink);
     border-radius:clamp(9px,1.6vmin,13px);cursor:pointer;touch-action:manipulation;
     display:block;}
-  .cbtn:active,.cbtn.active{background:var(--ink);color:var(--paper);}
+  .cbtn:active,.cbtn.active{background:var(--sel);color:var(--onsel);}
   .lbl{font-size:clamp(12px,2vmin,16px);font-weight:700;color:var(--guide);
     text-transform:uppercase;letter-spacing:.5px;}
   .row{display:flex;gap:clamp(6px,1.4vw,10px);}
@@ -109,11 +108,11 @@
   #infoPop{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);
     display:none;align-items:center;justify-content:center;padding:clamp(10px,4vmin,30px);}
   #infoPop.open{display:flex;}
-  .info-card{background:var(--paper);border:var(--bw) solid var(--ink);
+  .info-card{background:var(--paper);border:var(--bw) solid var(--line);
     border-radius:clamp(10px,2vmin,18px);max-width:min(90vw,430px);max-height:80vh;
     overflow-y:auto;touch-action:pan-y;padding:clamp(12px,3vmin,22px);}
   .info-card .ih{display:flex;align-items:center;gap:10px;
-    border-bottom:var(--bw) solid var(--ink);padding-bottom:clamp(6px,1.5vmin,10px);
+    border-bottom:var(--bw) solid var(--line);padding-bottom:clamp(6px,1.5vmin,10px);
     margin-bottom:clamp(8px,2vmin,12px);}
   .info-card .ih .t{font-size:clamp(16px,3.2vmin,22px);font-weight:800;flex:1 1 auto;min-width:0;}
   .info-card p{margin:0 0 clamp(8px,2vmin,12px);font-size:clamp(14px,2.6vmin,18px);line-height:1.45;}
@@ -125,15 +124,13 @@
   #sizeRange::-moz-range-track{height:var(--bw);background:var(--ink);border-radius:2px;}
   #sizeRange::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
     width:clamp(18px,3.2vmin,26px);height:clamp(18px,3.2vmin,26px);border-radius:50%;
-    background:var(--paper);border:var(--bw) solid var(--ink);
+    background:var(--paper);border:var(--bw) solid var(--line);
     margin-top:calc(var(--bw)/2 - clamp(18px,3.2vmin,26px)/2);}
   #sizeRange::-moz-range-thumb{width:clamp(18px,3.2vmin,26px);height:clamp(18px,3.2vmin,26px);
-    border-radius:50%;background:var(--paper);border:var(--bw) solid var(--ink);box-sizing:border-box;}
+    border-radius:50%;background:var(--paper);border:var(--bw) solid var(--line);box-sizing:border-box;}
 </style>
-<script>
-  try { if (localStorage.getItem("lv_theme") === "color")
-          document.documentElement.dataset.theme = "color"; } catch (e) {}
-</script>
+<link rel="stylesheet" href="theme.css?v=9e72b1e">
+<script src="theme.js?v=9e72b1e"></script>
 </head>
 <body>
 <div id="app">
@@ -167,6 +164,7 @@
       <div class="row" style="margin-top:8px">
         <button class="cbtn" data-case="upper">ABC</button>
         <button class="cbtn" data-case="lower">abc</button>
+        <button class="cbtn" data-case="mixed">Abc</button>
       </div>
     </div>
     <div>
@@ -174,6 +172,7 @@
       <div class="row" style="margin-top:8px">
         <button class="cbtn" data-case="pupper">ABC</button>
         <button class="cbtn" data-case="plower">abc</button>
+        <button class="cbtn" data-case="pmixed">Abc</button>
       </div>
     </div>
     <div>
@@ -199,6 +198,7 @@
       <div class="row" style="margin-top:8px">
         <button class="cbtn" data-theme-btn="eink">E-tinte</button>
         <button class="cbtn" data-theme-btn="color">Krāsains</button>
+        <button class="cbtn" data-theme-btn="dark">Tumšs</button>
       </div>
     </div>
     <div class="ver" id="appVer"></div>
@@ -212,11 +212,11 @@
   </div>
 </div>
 
-<script src="letters.js?v=3aebb71"></script>
+<script src="letters.js?v=9e72b1e"></script>
 <script>
 "use strict";
 (function () {
-  var APPV = "3aebb71";
+  var APPV = "9e72b1e";
   var SVGNS = "http://www.w3.org/2000/svg";
   // Latvian words (uppercase), in the given order
   var SYL = ["ACS","AITA","AKA","ALGA","ASTE","AUSS","BĀKA","BITE","BIZE","DESA","EGLE","EZIS","FEJA","GOVS","IELA","INDE","JAKA","JŪRA","KĀJA","KŪLA","LAPA","ĻIPA","MAMMA","MATI","MĀJA","MĀSA","MĒLE","MUTE","NAGI","OGLE","OLIS","OME","OTA","PELE","PĪLE","POGA","PUĶE","PUPA","PŪCE","PŪKA","RASA","RATI","RĪSI","ROKA","ROZE","SĒTA","SOMA","SULA","SUNS","TAKA","TĒJA","TĒTIS","UPE","VĀLE","VĪLE","ZĀLE","ZEME","ZĪLE","ZOBI","ZUPA"];
@@ -227,8 +227,8 @@
   LETTERS_UPPER.forEach(function (e) { ENT_U[e.char] = e; });
   LETTERS_LOWER.forEach(function (e) { ENT_L[e.char] = e; });
 
-  // colourful accents, cycled per card (e-ink stays --ink via CSS)
-  var PALETTE = ["#e11d48", "#2563eb", "#16a34a", "#f59e0b", "#0e7490", "#9333ea"];
+  // calm accents (card border + underline only — the letters stay ink)
+  var PALETTE = ["#d0675f", "#4f86c6", "#4f9d69", "#d39a3a", "#3f93a8", "#8f74c4"];
 
   var svg  = document.getElementById("syl");
   var card = document.getElementById("card");
@@ -241,7 +241,11 @@
   // display style: handwritten "upper" / "lower", or "print" (standard font,
   // shown in the list's natural case). Per-page key, remembered independently.
   var mode = localStorage.getItem("lv_var_case") || "pupper";
-  if (["upper", "lower", "pupper", "plower"].indexOf(mode) < 0) mode = "pupper";
+  if (["upper", "lower", "mixed", "pupper", "plower", "pmixed"].indexOf(mode) < 0) mode = "pupper";
+  // "mixed" = handwritten, first letter capital, the rest lowercase. letters.js
+  // capitals sit ~5 units lower than the lowercase baseline (86.9 vs 81.8
+  // median), so the capital is lifted to share the lowercase baseline.
+  var CAP_DY = -5;
 
   var idx = parseInt(localStorage.getItem("lv_var") || "0", 10);
   if (!(idx >= 0 && idx < SYL.length)) idx = 0;
@@ -260,9 +264,11 @@
 
   function render() {
     var raw = SYL[idx];
-    var isPrint = (mode === "pupper" || mode === "plower");
+    var isPrint = (mode === "pupper" || mode === "plower" || mode === "pmixed");
     var upper = (mode === "upper" || mode === "pupper");
-    var text = upper ? raw.toUpperCase() : raw.toLowerCase();
+    var mixed = (mode === "mixed");
+    var text = (mixed || mode === "pmixed") ? raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
+             : upper ? raw.toUpperCase() : raw.toLowerCase();
     prog.textContent = (idx + 1) + " / " + SYL.length;
     svg.setAttribute("aria-label", text);
     while (svg.firstChild) svg.removeChild(svg.firstChild);
@@ -281,15 +287,16 @@
     } else {
       // handwriting: one group per letter, packed left->right by measured width.
       // getBBox is exact because the stage is visible when this runs.
-      var table = upper ? ENT_U : ENT_L;
       var cursor = 0; yTop = Infinity; yBot = -Infinity;
-      text.split("").forEach(function (ch) {
-        var g = groupFor(ch, table); svg.appendChild(g);
+      text.split("").forEach(function (ch, i) {
+        var cap = mixed ? i === 0 : upper;
+        var dy = (mixed && cap) ? CAP_DY : 0;
+        var g = groupFor(ch, cap ? ENT_U : ENT_L); svg.appendChild(g);
         var b = g.getBBox();
-        g.setAttribute("transform", "translate(" + (cursor - b.x) + ",0)");
+        g.setAttribute("transform", "translate(" + (cursor - b.x) + "," + dy + ")");
         cursor += b.width + GAP;
-        if (b.y < yTop) yTop = b.y;
-        if (b.y + b.height > yBot) yBot = b.y + b.height;
+        if (b.y + dy < yTop) yTop = b.y + dy;
+        if (b.y + dy + b.height > yBot) yBot = b.y + dy + b.height;
       });
       totalW = cursor - GAP;
     }
@@ -320,8 +327,8 @@
     var vbY = (yTop + uy) / 2 - vbH / 2;
     svg.setAttribute("viewBox", vbX + " " + vbY + " " + vbW + " " + vbH);
 
-    if (domanOn) card.style.setProperty("--accent", "#000");   // Doman: black border
-    else if (document.documentElement.dataset.theme === "color")
+    if (domanOn) card.style.setProperty("--accent", "var(--ink)");   // Doman: ink border
+    else if (document.documentElement.hasAttribute("data-theme"))   // Krāsains + Tumšs
       card.style.setProperty("--accent", PALETTE[idx % PALETTE.length]);
     else card.style.removeProperty("--accent");
 
@@ -391,20 +398,10 @@
 
   // theme toggle (shared lv_theme; re-render to recolour the accent)
   function applyTheme() {
-    var color = localStorage.getItem("lv_theme") === "color";
-    if (color) document.documentElement.dataset.theme = "color";
-    else document.documentElement.removeAttribute("data-theme");
-    document.querySelectorAll("[data-theme-btn]").forEach(function (b) {
-      b.classList.toggle("active", (b.dataset.themeBtn === "color") === color);
-    });
+    LVTheme.apply();   // data-theme + active buttons (theme.js)
     render();
   }
-  document.querySelectorAll("[data-theme-btn]").forEach(function (b) {
-    b.addEventListener("click", function () {
-      localStorage.setItem("lv_theme", b.dataset.themeBtn === "color" ? "color" : "eink");
-      applyTheme();
-    });
-  });
+  document.addEventListener("lvtheme", applyTheme);   // theme.js handles the buttons
 
   function updateCaseBtns() {
     document.querySelectorAll("[data-case]").forEach(function (b) {
@@ -454,7 +451,8 @@
   var INFO = {
     burti: { t: "Burti", p: [
       "ABC / abc — rakstītie burti (kā raksta ar roku), lielie vai mazie.",
-      "Drukāti — kā burti izskatās grāmatā."] },
+      "Abc — pirmais burts lielais, pārējie mazie.",
+      "Drukāti — kā burti izskatās grāmatā (ABC, abc vai Abc)."] },
     nejausi: { t: "Nejauši", p: [
       "Ieslēdz nejaušo secību — tad ▶ rāda nejaušu, nevis nākamo pēc kārtas.",
       "Nospied vēlreiz, lai izslēgtu."] },
@@ -462,7 +460,8 @@
       "Cik lieli burti redzami ekrānā."] },
     ekrans: { t: "Ekrāns", p: [
       "E-tinte — augsts kontrasts (melns/balts) e-tintes planšetēm.",
-      "Krāsains — dzīvīgas krāsas parastiem (LED/OLED) ekrāniem."] },
+      "Krāsains — mierīgas krāsas parastiem (LED/OLED) ekrāniem.",
+      "Tumšs — gaiši burti uz tumša fona, vakaram un tumšai telpai."] },
     doman: { t: "Domana princips", p: [
       "Lasīšanas metode maziem bērniem: liels vārds sarkanā krāsā uz balta.",
       "Ieslēdz — burti kļūst sarkani, rāmis melns, svītra pazūd. Nospied vēlreiz, lai izslēgtu."] },

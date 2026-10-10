@@ -12,12 +12,6 @@
     --rule:#dcdcdc; --scrim:rgba(255,255,255,.82);
     --bw:3px; /* border width */
   }
-  /* Colourful (LED/OLED): indigo chrome + pen, peach shadow to trace over */
-  :root[data-theme="color"]{
-    --ink:#3730a3; --paper:#f4f8ff; --faint:#ffca8a; --guide:#f59e0b;
-    --ok:#16a34a; --bad:#e11d48;
-    --rule:#c7d2fe; --scrim:rgba(244,248,255,.85);
-  }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;background:var(--paper);color:var(--ink);
     font-family:"Segoe UI",Arial,Helvetica,sans-serif;overflow:hidden;
@@ -30,7 +24,7 @@
 
   header{display:flex;align-items:center;justify-content:space-between;gap:10px;
     padding:clamp(6px,1.6vmin,14px) clamp(10px,2.5vw,22px);
-    border-bottom:var(--bw) solid var(--ink);flex:0 0 auto;}
+    border-bottom:var(--bw) solid var(--line);flex:0 0 auto;}
   /* min-width:0 lets the title ellipsize instead of shoving the star counter
      off-screen — flex items refuse to shrink below content width without it */
   header .title{font-size:clamp(15px,3.4vmin,24px);font-weight:700;
@@ -42,7 +36,7 @@
     font-size:clamp(14px,3vmin,22px);font-weight:700;white-space:nowrap;
     font-variant-numeric:tabular-nums;flex:0 0 auto;min-width:0;
     padding:clamp(3px,.8vmin,7px) clamp(6px,1.4vw,11px);
-    border:var(--bw) solid var(--ink);border-radius:clamp(8px,1.4vmin,12px);
+    border:var(--bw) solid var(--line);border-radius:clamp(8px,1.4vmin,12px);
     background:var(--paper);color:var(--ink);cursor:pointer;
     touch-action:manipulation;}
 
@@ -54,7 +48,7 @@
   /* largest square that fits the stage in ANY aspect ratio (portrait too) */
   #frame{position:relative;aspect-ratio:1/1;
     width:min(100cqw,100cqh);height:auto;
-    border:var(--bw) solid var(--ink);border-radius:clamp(10px,2vmin,20px);
+    border:var(--bw) solid var(--line);border-radius:clamp(10px,2vmin,20px);
     background:var(--paper);}
   /* fallback for browsers without container query units */
   @supports not (width:1cqmin){
@@ -88,16 +82,16 @@
   #actionbar{display:flex;flex-wrap:nowrap;gap:clamp(6px,1.2vw,14px);
     align-items:center;justify-content:center;
     padding:clamp(8px,1.6vmin,14px) clamp(6px,1.5vw,18px);
-    border-bottom:var(--bw) solid var(--ink);flex:0 0 auto;}
+    border-bottom:var(--bw) solid var(--line);flex:0 0 auto;}
   #actionbar button{flex:1 1 0;min-width:0;white-space:nowrap;
     font-size:clamp(13px,2.4vmin,20px);
     padding:clamp(8px,1.4vmin,12px) clamp(4px,1vw,16px);}
   button{font-size:clamp(15px,2.6vmin,22px);font-weight:700;
     padding:clamp(8px,1.4vmin,12px) clamp(14px,3vw,26px);
-    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border:var(--bw) solid var(--line);background:var(--paper);color:var(--ink);
     border-radius:clamp(9px,1.6vmin,14px);cursor:pointer;
     min-width:clamp(84px,22vw,140px);touch-action:manipulation;}
-  button:active{background:var(--ink);color:var(--paper);}
+  button:active{background:var(--sel);color:var(--onsel);}
   /* current-letter preview, lives in the header next to the counter */
   #letterName{font-size:clamp(20px,3.8vmin,28px);font-weight:800;
     text-align:center;min-width:1.2em;flex:0 0 auto;}
@@ -105,10 +99,10 @@
   /* hamburger / close icon buttons */
   .iconbtn{font-size:clamp(18px,3.4vmin,26px);line-height:1;font-weight:700;
     padding:clamp(4px,1vmin,8px) clamp(8px,1.6vw,12px);
-    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border:var(--bw) solid var(--line);background:var(--paper);color:var(--ink);
     border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;
     min-width:0;flex:0 0 auto;touch-action:manipulation;}
-  .iconbtn:active,.iconbtn.active{background:var(--ink);color:var(--paper);}
+  .iconbtn:active,.iconbtn.active{background:var(--sel);color:var(--onsel);}
 
   /* settings drawer — holds every option, so the frame keeps the screen */
   #backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:15;
@@ -117,7 +111,7 @@
   /* opens from the left, under the ☰ it belongs to */
   #menu{position:fixed;top:0;left:0;bottom:0;z-index:20;
     width:min(88vw,340px);background:var(--paper);
-    border-right:var(--bw) solid var(--ink);
+    border-right:var(--bw) solid var(--line);
     display:flex;flex-direction:column;
     transform:translateX(-100%);visibility:hidden;
     transition:transform .22s ease, visibility 0s linear .22s;}
@@ -133,7 +127,7 @@
   .menu-head{display:flex;align-items:center;gap:clamp(8px,2vw,14px);
     flex:0 0 auto;padding:clamp(8px,1.8vmin,14px) clamp(10px,2.5vw,18px);
     padding-top:calc(clamp(8px,1.8vmin,14px) + env(safe-area-inset-top));
-    border-bottom:var(--bw) solid var(--ink);}
+    border-bottom:var(--bw) solid var(--line);}
   .menu-head .t{font-size:clamp(15px,3vmin,22px);font-weight:800;
     flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis;}
@@ -169,12 +163,12 @@
     display:none;align-items:center;justify-content:center;
     padding:clamp(10px,4vmin,30px);}
   #infoPop.show{display:flex;}
-  .info-card{background:var(--paper);border:var(--bw) solid var(--ink);
+  .info-card{background:var(--paper);border:var(--bw) solid var(--line);
     border-radius:clamp(10px,2vmin,18px);max-width:min(90vw,430px);
     max-height:80vh;overflow-y:auto;touch-action:pan-y;
     padding:clamp(12px,3vmin,22px);}
   .info-card .ih{display:flex;align-items:center;gap:10px;
-    border-bottom:var(--bw) solid var(--ink);
+    border-bottom:var(--bw) solid var(--line);
     padding-bottom:clamp(6px,1.5vmin,10px);margin-bottom:clamp(8px,2vmin,12px);}
   .info-card .ih .t{font-size:clamp(16px,3.2vmin,22px);font-weight:800;
     flex:1 1 auto;min-width:0;}
@@ -188,10 +182,10 @@
     font-variant-numeric:tabular-nums;}
   .cbtn{font-size:clamp(13px,2.2vmin,18px);font-weight:700;
     padding:clamp(5px,1vmin,9px) clamp(10px,2vw,18px);
-    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border:var(--bw) solid var(--line);background:var(--paper);color:var(--ink);
     border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;touch-action:manipulation;}
-  .cbtn:active{background:var(--ink);color:var(--paper);}
-  .cbtn.active{background:var(--ink);color:var(--paper);}
+  .cbtn:active{background:var(--sel);color:var(--onsel);}
+  .cbtn.active{background:var(--sel);color:var(--onsel);}
 
   /* letter-size slider. touch-action must be re-enabled: body sets
      touch-action:none for the drawing canvas, which otherwise eats the drag. */
@@ -204,11 +198,11 @@
     border-radius:2px;}
   #sizeRange::-webkit-slider-thumb,#inkRange::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
     width:clamp(18px,3.2vmin,26px);height:clamp(18px,3.2vmin,26px);
-    border-radius:50%;background:var(--paper);border:var(--bw) solid var(--ink);
+    border-radius:50%;background:var(--paper);border:var(--bw) solid var(--line);
     margin-top:calc(var(--bw) / 2 - clamp(18px,3.2vmin,26px) / 2);}
   #sizeRange::-moz-range-thumb,#inkRange::-moz-range-thumb{width:clamp(18px,3.2vmin,26px);
     height:clamp(18px,3.2vmin,26px);border-radius:50%;background:var(--paper);
-    border:var(--bw) solid var(--ink);box-sizing:border-box;}
+    border:var(--bw) solid var(--line);box-sizing:border-box;}
 
   /* letter picker — full-screen grid of every letter, slides down from the top */
   #picker{position:fixed;inset:0;z-index:25;background:var(--paper);
@@ -221,7 +215,7 @@
   .picker-head{display:flex;align-items:center;gap:clamp(8px,2vw,14px);
     flex:0 0 auto;padding:clamp(8px,1.8vmin,14px) clamp(10px,2.5vw,18px);
     padding-top:calc(clamp(8px,1.8vmin,14px) + env(safe-area-inset-top));
-    border-bottom:var(--bw) solid var(--ink);}
+    border-bottom:var(--bw) solid var(--line);}
   .picker-head .t{font-size:clamp(15px,3vmin,22px);font-weight:800;
     flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis;}
@@ -233,11 +227,11 @@
   /* min-width:0 drops the global button min-width, which would blow the grid up */
   .pcell{position:relative;aspect-ratio:1/1;min-width:0;padding:0;
     display:flex;align-items:center;justify-content:center;
-    border:var(--bw) solid var(--ink);border-radius:clamp(8px,1.6vmin,14px);
+    border:var(--bw) solid var(--line);border-radius:clamp(8px,1.6vmin,14px);
     background:var(--paper);color:var(--ink);cursor:pointer;
     touch-action:manipulation;}
   .pcell .pch{font-size:clamp(19px,4.4vmin,32px);font-weight:800;line-height:1;}
-  .pcell.cur,.pcell:active{background:var(--ink);color:var(--paper);}
+  .pcell.cur,.pcell:active{background:var(--sel);color:var(--onsel);}
 
   /* animation demo stroke overlay */
   .demo-stroke{fill:none;stroke:var(--ink);stroke-width:9;
@@ -254,11 +248,8 @@
     #actionbar{gap:8px;}
   }
 </style>
-<script>
-  /* set the theme before first paint so colourful users see no e-ink flash */
-  try { if (localStorage.getItem("lv_theme") === "color")
-          document.documentElement.dataset.theme = "color"; } catch (e) {}
-</script>
+<link rel="stylesheet" href="theme.css?v=9e72b1e">
+<script src="theme.js?v=9e72b1e"></script>
 </head>
 <body>
 <div id="app">
@@ -362,6 +353,7 @@
       <div class="row">
         <button class="cbtn" data-theme-btn="eink">E-tinte</button>
         <button class="cbtn" data-theme-btn="color">Krāsains</button>
+        <button class="cbtn" data-theme-btn="dark">Tumšs</button>
       </div>
     </div>
     <div class="ver" id="appVer"></div>
@@ -370,7 +362,7 @@
 
 <!-- ?v= busts stale caches on tablets; bump it when either file changes -->
 <script>window.LV_MODE = "digits";</script>
-<script src="letters.js?v=3aebb71"></script>
-<script src="app.js?v=3aebb71"></script>
+<script src="letters.js?v=9e72b1e"></script>
+<script src="app.js?v=9e72b1e"></script>
 </body>
 </html>

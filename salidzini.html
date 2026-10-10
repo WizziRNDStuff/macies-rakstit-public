@@ -6,7 +6,6 @@
 <title>Salīdzini</title>
 <style>
   :root{ --ink:#000; --paper:#fff; --guide:#9a9a9a; --ok:#0a7d24; --bad:#b00020; --bw:3px; }
-  :root[data-theme="color"]{ --ink:#3730a3; --paper:#f4f8ff; --guide:#f59e0b; --ok:#16a34a; --bad:#e11d48; }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;background:var(--paper);color:var(--ink);
     font-family:"Segoe UI",Arial,Helvetica,sans-serif;overflow:hidden;
@@ -17,24 +16,53 @@
 
   header{display:flex;align-items:center;gap:clamp(8px,2vw,14px);
     padding:clamp(6px,1.6vmin,14px) clamp(10px,2.5vw,22px);
-    border-bottom:var(--bw) solid var(--ink);flex:0 0 auto;}
+    border-bottom:var(--bw) solid var(--line);flex:0 0 auto;}
   header .title{font-size:clamp(16px,3.4vmin,24px);font-weight:800;
     flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   header .score{font-size:clamp(14px,2.8vmin,20px);font-weight:700;white-space:nowrap;
     font-variant-numeric:tabular-nums;}
   .iconbtn{font-size:clamp(18px,3.4vmin,26px);line-height:1;font-weight:700;
     padding:clamp(4px,1vmin,8px) clamp(8px,1.6vw,12px);
-    border:var(--bw) solid var(--ink);background:var(--paper);color:var(--ink);
+    border:var(--bw) solid var(--line);background:var(--paper);color:var(--ink);
     border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;flex:0 0 auto;touch-action:manipulation;}
-  .iconbtn:active,.iconbtn.active{background:var(--ink);color:var(--paper);}
+  .iconbtn:active,.iconbtn.active{background:var(--sel);color:var(--onsel);}
 
   #stage{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;
     position:relative;padding:clamp(10px,3vmin,28px);}
   #eq{display:flex;align-items:center;justify-content:center;gap:clamp(10px,3vw,34px);
     font-weight:800;font-size:clamp(48px,17vmin,160px);line-height:1;
     font-variant-numeric:tabular-nums;}
+  [hidden]{display:none!important;}
+  #eq.write #cmp{min-width:1.3em;}            /* same footprint as the box */
+  /* write-the-answer box, between the two numbers like on paper */
+  #wframe{position:relative;flex:0 0 auto;width:1.3em;height:1.3em;
+    border:var(--bw) dashed var(--guide);border-radius:.14em;
+    background:var(--paper);overflow:hidden;}
+  #wframe.bad{border-color:var(--bad);}
+  #wcanvas{position:absolute;inset:0;width:100%;height:100%;
+    border-radius:inherit;touch-action:none;}
+  #writepad{flex:0 0 auto;border-top:var(--bw) solid var(--line);
+    display:flex;flex-direction:column;gap:clamp(6px,1.4vmin,12px);
+    padding:clamp(8px,1.8vmin,16px) clamp(8px,2vw,18px);}
+  #writepad .whint{font-size:clamp(11px,2vmin,14px);line-height:1.35;
+    color:var(--guide);text-align:center;margin:0;}
+  #wbtns{display:flex;gap:clamp(6px,1.4vw,12px);}
+  .wbtn{flex:1 1 0;min-width:0;font-size:clamp(16px,3vmin,24px);font-weight:800;
+    padding:clamp(10px,2vmin,16px) 0;border:var(--bw) solid var(--line);
+    background:var(--paper);color:var(--ink);border-radius:clamp(9px,1.6vmin,14px);
+    cursor:pointer;touch-action:manipulation;}
+  .wbtn:active{background:var(--sel);color:var(--onsel);}
+  .wbtn.ok{border-color:var(--ok);color:var(--ok);}
+  .wbtn.ok:active{background:var(--ok);color:#fff;}
+  .hint{font-size:clamp(11px,2vmin,14px);line-height:1.4;color:var(--guide);
+    margin:clamp(6px,1.4vmin,10px) 0 0;}
   #cmp{min-width:1.1em;text-align:center;border-bottom:clamp(4px,1vmin,8px) solid var(--guide);
     color:var(--guide);}
+  /* handwritten numbers (handnum.js): a 1em-tall inline SVG per number,
+     coloured by `color`, so good/bad/guide states work unchanged */
+  #eq > span{display:inline-flex;justify-content:center;align-items:center;}
+  .hn{display:block;height:1em;overflow:visible;fill:none;stroke:currentColor;
+    stroke-width:6.5;stroke-linecap:round;stroke-linejoin:round;}
   #cmp.good{color:var(--ok);border-color:var(--ok);}
   #cmp.bad{color:var(--bad);border-color:var(--bad);}
   #fx{position:absolute;top:clamp(6px,2vmin,16px);right:clamp(10px,3vw,26px);
@@ -42,14 +70,14 @@
   #fx.show{opacity:1;} #fx.good{color:var(--ok);} #fx.bad{color:var(--bad);}
 
   /* the three comparison choices */
-  #pad{flex:0 0 auto;border-top:var(--bw) solid var(--ink);
+  #pad{flex:0 0 auto;border-top:var(--bw) solid var(--line);
     padding:clamp(8px,1.8vmin,16px) clamp(8px,2vw,18px);
     display:grid;gap:clamp(8px,1.8vw,16px);grid-template-columns:repeat(3,1fr);}
   .num{font-size:clamp(34px,9vmin,72px);font-weight:800;line-height:1;
-    padding:clamp(10px,2.4vmin,22px) 0;border:var(--bw) solid var(--ink);
+    padding:clamp(10px,2.4vmin,22px) 0;border:var(--bw) solid var(--line);
     background:var(--paper);color:var(--ink);border-radius:clamp(9px,1.6vmin,14px);
     cursor:pointer;touch-action:manipulation;}
-  .num:active{background:var(--ink);color:var(--paper);}
+  .num:active{background:var(--sel);color:var(--onsel);}
   .num.wrong{background:var(--bad);border-color:var(--bad);color:var(--paper);}
   .num.right{background:var(--ok);border-color:var(--ok);color:var(--paper);}
 
@@ -57,7 +85,7 @@
     opacity:0;pointer-events:none;transition:opacity .22s ease;}
   #backdrop.open{opacity:1;pointer-events:auto;}
   #menu{position:fixed;top:0;left:0;bottom:0;z-index:20;width:min(88vw,340px);
-    background:var(--paper);border-right:var(--bw) solid var(--ink);
+    background:var(--paper);border-right:var(--bw) solid var(--line);
     display:flex;flex-direction:column;transform:translateX(-100%);visibility:hidden;
     transition:transform .22s ease, visibility 0s linear .22s;}
   #menu.open{transform:translateX(0);visibility:visible;transition:transform .22s ease, visibility 0s;}
@@ -65,17 +93,17 @@
   .menu-head{display:flex;align-items:center;gap:clamp(8px,2vw,14px);flex:0 0 auto;
     padding:clamp(8px,1.8vmin,14px) clamp(10px,2.5vw,18px);
     padding-top:calc(clamp(8px,1.8vmin,14px) + env(safe-area-inset-top));
-    border-bottom:var(--bw) solid var(--ink);}
+    border-bottom:var(--bw) solid var(--line);}
   .menu-head .t{font-size:clamp(15px,3vmin,22px);font-weight:800;flex:1 1 auto;min-width:0;}
   .menu-body{flex:1 1 auto;min-height:0;overflow-y:auto;touch-action:pan-y;
     padding:clamp(10px,2.4vmin,18px);
     padding-bottom:calc(clamp(10px,2.4vmin,18px) + env(safe-area-inset-bottom));
     display:flex;flex-direction:column;gap:clamp(12px,2.6vmin,18px);}
   .cbtn{font-size:clamp(14px,2.4vmin,19px);font-weight:700;text-align:center;text-decoration:none;
-    padding:clamp(9px,1.8vmin,13px) clamp(10px,2vw,16px);border:var(--bw) solid var(--ink);
+    padding:clamp(9px,1.8vmin,13px) clamp(10px,2vw,16px);border:var(--bw) solid var(--line);
     background:var(--paper);color:var(--ink);border-radius:clamp(9px,1.6vmin,13px);
     cursor:pointer;touch-action:manipulation;display:block;}
-  .cbtn:active,.cbtn.active{background:var(--ink);color:var(--paper);}
+  .cbtn:active,.cbtn.active{background:var(--sel);color:var(--onsel);}
   .lbl{font-size:clamp(12px,2vmin,16px);font-weight:700;color:var(--guide);
     text-transform:uppercase;letter-spacing:.5px;}
   .row{display:flex;gap:clamp(6px,1.4vw,10px);}
@@ -83,9 +111,8 @@
   .ver{margin-top:auto;text-align:center;color:var(--guide);font-size:clamp(11px,1.8vmin,14px);
     padding-top:clamp(8px,2vmin,14px);font-variant-numeric:tabular-nums;}
 </style>
-<script>
-  try { if (localStorage.getItem("lv_theme") === "color") document.documentElement.dataset.theme="color"; } catch(e){}
-</script>
+<link rel="stylesheet" href="theme.css?v=9e72b1e">
+<script src="theme.js?v=9e72b1e"></script>
 </head>
 <body>
 <div id="app">
@@ -96,7 +123,9 @@
   </header>
   <div id="stage">
     <div id="eq">
-      <span id="a">0</span><span id="cmp">?</span><span id="b">0</span>
+      <span id="a">0</span><span id="cmp">?</span>
+      <div id="wframe" hidden><canvas id="wcanvas"></canvas></div>
+      <span id="b">0</span>
     </div>
     <div id="fx"></div>
   </div>
@@ -104,6 +133,14 @@
     <button class="num" data-op="&lt;" aria-label="mazāks">&lt;</button>
     <button class="num" data-op="=" aria-label="vienāds">=</button>
     <button class="num" data-op="&gt;" aria-label="lielāks">&gt;</button>
+  </div>
+  <div id="writepad" hidden>
+    <div class="whint">Uzraksti lodziņā &lt;, = vai &gt; un nospied ✓ Pārbaudīt. Atpazīšana vēl top — ja pareizu zīmi neatpazīst, spied Tālāk ▶.</div>
+    <div id="wbtns">
+      <button class="wbtn" id="wclear" type="button">Dzēst</button>
+      <button class="wbtn ok" id="wcheck" type="button">✓ Pārbaudīt</button>
+      <button class="wbtn" id="wskip" type="button">Tālāk ▶</button>
+    </div>
   </div>
 </div>
 
@@ -124,20 +161,38 @@
       </div>
     </div>
     <div>
+      <span class="lbl">Atbilde</span>
+      <div class="row" style="margin-top:8px">
+        <button class="cbtn" data-mode="choose">Izvēlēties</button>
+        <button class="cbtn" data-mode="write">Rakstīt</button>
+      </div>
+      <p class="hint">⚠️ “Rakstīt”: zīmju atpazīšana vēl top — reizēm pareizu zīmi var neatpazīt. Ja atbilde ir pareiza, bet netiek atpazīta, spied “Tālāk ▶”, lai turpinātu.</p>
+    </div>
+    <div>
+      <span class="lbl">Cipari</span>
+      <div class="row" style="margin-top:8px">
+        <button class="cbtn" data-hand="0">Drukāti</button>
+        <button class="cbtn" data-hand="1">Rakstīti</button>
+      </div>
+    </div>
+    <div>
       <span class="lbl">Ekrāns</span>
       <div class="row" style="margin-top:8px">
         <button class="cbtn" data-theme-btn="eink">E-tinte</button>
         <button class="cbtn" data-theme-btn="color">Krāsains</button>
+        <button class="cbtn" data-theme-btn="dark">Tumšs</button>
       </div>
     </div>
     <div class="ver" id="appVer"></div>
   </div>
 </aside>
 
+<script src="letters.js?v=9e72b1e"></script>
+<script src="handnum.js?v=9e72b1e"></script>
 <script>
 "use strict";
 (function () {
-  var APPV = "3aebb71";
+  var APPV = "9e72b1e";
   var aEl = document.getElementById("a"), bEl = document.getElementById("b");
   var cmpEl = document.getElementById("cmp"), fxEl = document.getElementById("fx");
   var pad = document.getElementById("pad"), scoreEl = document.getElementById("score");
@@ -162,9 +217,11 @@
     } while (key === lastKey && ++guard < 8);
     lastKey = key;
     correct = a > b ? ">" : (a < b ? "<" : "=");
-    aEl.textContent = a; bEl.textContent = b;
-    cmpEl.textContent = "?"; cmpEl.className = "";
+    HandNum.put(aEl, a); HandNum.put(bEl, b);
+    HandNum.put(cmpEl, "?"); cmpEl.className = "";
     busy = false;
+    clearWrite();
+    showBox(true);
   }
 
   function flash(el, cls, ms) {
@@ -172,26 +229,226 @@
     setTimeout(function () { el.classList.remove(cls); }, ms);
   }
 
+  // shared verdict feedback, used by both the buttons and the write box
+  function onCorrect(op, btn) {
+    busy = true;
+    score++; scoreEl.textContent = "✓ " + score;
+    showBox(false);   // write mode: the box gives way to the green sign
+    HandNum.put(cmpEl, op); cmpEl.className = "good";
+    if (btn) btn.classList.add("right");
+    fxEl.textContent = "✓"; fxEl.className = "show good";
+    beep(660);
+    setTimeout(function () {
+      if (btn) btn.classList.remove("right");
+      fxEl.className = ""; newProblem();
+    }, 900);
+  }
+  function onWrong(btn) {
+    if (btn) flash(btn, "wrong", 500);
+    flash(wframe.hidden ? cmpEl : wframe, "bad", 400);
+    fxEl.textContent = "✗"; fxEl.className = "show bad";
+    setTimeout(function () { fxEl.className = ""; }, 500);
+    beep(150);
+  }
   function answer(op, btn) {
     if (busy) return;
-    if (op === correct) {
-      busy = true;
-      score++; scoreEl.textContent = "✓ " + score;
-      cmpEl.textContent = op; cmpEl.className = "good";
-      btn.classList.add("right");
-      fxEl.textContent = "✓"; fxEl.className = "show good";
-      beep(660);
-      setTimeout(function () {
-        btn.classList.remove("right"); fxEl.className = ""; newProblem();
-      }, 900);
-    } else {
-      flash(btn, "wrong", 500);
-      flash(cmpEl, "bad", 400);
-      fxEl.textContent = "✗"; fxEl.className = "show bad";
-      setTimeout(function () { fxEl.className = ""; }, 500);
-      beep(150);
-    }
+    if (op === correct) onCorrect(op, btn);
+    else onWrong(btn);
   }
+
+  // ---------- write-the-answer mode ----------
+  // The child writes <, = or > in the box between the numbers; classifySym()
+  // reads the ink geometrically (no model needed for three symbols).
+  var mode = localStorage.getItem("lv_cmp_answer") === "write" ? "write" : "choose";
+  var writepad = document.getElementById("writepad");
+  var wframe = document.getElementById("wframe");
+  var eqEl = document.getElementById("eq");
+  var wcanvas = document.getElementById("wcanvas");
+  var wctx = wcanvas.getContext("2d");
+  var wink = [], wcur = null, wdrawing = false, wpid = null, wptype = "", wlast = null;
+
+  function penColor() {
+    return getComputedStyle(document.documentElement).getPropertyValue("--ink").trim() || "#000";
+  }
+  function sizeWCanvas() {
+    var r = wcanvas.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) return;
+    var dpr = window.devicePixelRatio || 1;
+    wcanvas.width = Math.round(r.width * dpr);
+    wcanvas.height = Math.round(r.height * dpr);
+    wctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    wctx.lineCap = "round"; wctx.lineJoin = "round";
+    wctx.lineWidth = Math.max(3, Math.min(r.width, r.height) * 0.05);
+    redrawWink();
+  }
+  function drawWStroke(st) {
+    if (st.length < 2) return;
+    wctx.beginPath();
+    wctx.moveTo(st[0].x, st[0].y);
+    for (var i = 1; i < st.length; i++) wctx.lineTo(st[i].x, st[i].y);
+    wctx.stroke();
+  }
+  function redrawWink() {
+    if (!wcanvas.width) return;
+    wctx.clearRect(0, 0, wcanvas.width, wcanvas.height);
+    wctx.strokeStyle = penColor();
+    wink.forEach(drawWStroke);
+    if (wcur) drawWStroke(wcur);
+  }
+  function clearWrite() {
+    wink = []; wcur = null; wdrawing = false;
+    if (wcanvas.width) wctx.clearRect(0, 0, wcanvas.width, wcanvas.height);
+  }
+  // write mode: the box sits between the numbers while answering; the ? /
+  // sign text takes its place for the verdict. Choose mode: always the text.
+  function showBox(writing) {
+    var box = (mode === "write" && writing);
+    var was = !wframe.hidden;
+    wframe.hidden = !box;
+    cmpEl.hidden = box;
+    if (box && !was) sizeWCanvas();
+  }
+  function toW(ev) {
+    var r = wcanvas.getBoundingClientRect();
+    return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+  }
+  wcanvas.addEventListener("pointerdown", function (ev) {
+    if (busy) return;
+    ev.preventDefault();
+    if (wdrawing) {
+      if (ev.pointerType === "pen" && wptype !== "pen") { wdrawing = false; wcur = null; }
+      else return;
+    }
+    wpid = ev.pointerId; wptype = ev.pointerType || ""; wdrawing = true;
+    var p = toW(ev); wcur = [p]; wlast = p;
+    wctx.strokeStyle = penColor();
+  });
+  wcanvas.addEventListener("pointermove", function (ev) {
+    if (!wdrawing || ev.pointerId !== wpid) return;
+    ev.preventDefault();
+    var evs = ev.getCoalescedEvents ? ev.getCoalescedEvents() : null;
+    if (!evs || !evs.length) evs = [ev];
+    for (var i = 0; i < evs.length; i++) {
+      var p = toW(evs[i]);
+      wctx.beginPath(); wctx.moveTo(wlast.x, wlast.y); wctx.lineTo(p.x, p.y); wctx.stroke();
+      wcur.push(p); wlast = p;
+    }
+  });
+  function endW(ev) {
+    if (!wdrawing || (ev && ev.pointerId !== wpid)) return;
+    wdrawing = false;
+    if (wcur && wcur.length > 1) wink.push(wcur);
+    wcur = null;
+  }
+  wcanvas.addEventListener("pointerup", endW);
+  wcanvas.addEventListener("pointercancel", endW);
+  wcanvas.addEventListener("pointerleave", endW);
+
+  // "<" / ">" / "=" / null from the ink. "=": two flat, roughly parallel
+  // strokes, stacked and apart. Chevron: compare the mean x of the middle
+  // third with the top and bottom thirds — vertex on the left is "<".
+  // Tuned on simulated handwriting (ml-free; mirrored in a Python sim).
+  function bboxOf(p) {
+    var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    p.forEach(function (q) {
+      if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x;
+      if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y;
+    });
+    return [x0, y0, x1, y1];
+  }
+  function dist(a, b) { return Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)); }
+  function resample(st, step) {
+    var out = [st[0]];
+    for (var i = 1; i < st.length; i++) {
+      var a = out[out.length - 1], b = st[i], d = dist(a, b);
+      while (d >= step) {
+        var t = step / d;
+        a = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+        out.push(a); d = dist(a, b);
+      }
+    }
+    return out;
+  }
+  function classifySym(strokes) {
+    strokes = strokes.filter(function (s) { return s && s.length > 1; });
+    if (!strokes.length) return null;
+    var all = [];
+    strokes.forEach(function (s) { all = all.concat(s); });
+    var bb = bboxOf(all), w = bb[2] - bb[0], h = bb[3] - bb[1], big = Math.max(w, h);
+    if (big < 12) return null;
+    var flat = [];
+    strokes.forEach(function (s) {
+      var b = bboxOf(s), sw = b[2] - b[0], sh = b[3] - b[1];
+      if (sw >= 1.8 * Math.max(sh, 1) && sw >= 0.4 * w) {
+        var p = s[0], q = s[s.length - 1];
+        if (p.x > q.x) { var t = p; p = q; q = t; }
+        flat.push({ sw: sw, a: b[0], c: b[2], cy: (b[1] + b[3]) / 2,
+                    slope: (q.y - p.y) / Math.max(q.x - p.x, 1), p: p, q: q });
+      }
+    });
+    if (flat.length >= 2) {
+      flat.sort(function (u, v) { return v.sw - u.sw; });
+      var f1 = flat[0], f2 = flat[1];
+      var gap = Math.abs(f1.cy - f2.cy);
+      var ov = Math.min(f1.c, f2.c) - Math.max(f1.a, f2.a);
+      var ends = Math.min(dist(f1.p, f2.p), dist(f1.p, f2.q), dist(f1.q, f2.p), dist(f1.q, f2.q));
+      if (gap > 0.15 * w && ov > 0.5 * Math.min(f1.sw, f2.sw) &&
+          Math.abs(f1.slope - f2.slope) < 0.5 && ends > 0.12 * w) return "=";
+    }
+    if (h < 0.4 * w || w < 0.25 * h) return null;
+    var pts = [];
+    strokes.forEach(function (s) { pts = pts.concat(resample(s, big / 60)); });
+    function meanX(lo, hi) {
+      var sum = 0, n = 0;
+      pts.forEach(function (q) {
+        if (q.y >= bb[1] + lo * h && q.y <= bb[1] + hi * h) { sum += q.x; n++; }
+      });
+      return n ? sum / n : null;
+    }
+    var tm = meanX(0, 0.3), mm = meanX(0.35, 0.65), bm = meanX(0.7, 1);
+    if (tm === null || mm === null || bm === null) return null;
+    if (Math.abs(tm - bm) > 0.45 * w) return null;
+    var d = ((tm + bm) / 2 - mm) / w;
+    if (d > 0.3) return "<";
+    if (d < -0.3) return ">";
+    return null;
+  }
+
+  function checkWritten() {
+    if (busy) return;
+    var strokes = wink.filter(function (s) { return s && s.length > 1; });
+    if (!strokes.length) { flash(wframe, "bad", 250); return; }
+    if (classifySym(strokes) === correct) onCorrect(correct, null);
+    else onWrong(null);   // ink stays so a parent can judge it (Tālāk ▶)
+  }
+  // parent override: reveal the sign and move on without scoring
+  function skipTask() {
+    if (busy) return;
+    busy = true;
+    fxEl.className = "";
+    showBox(false);
+    HandNum.put(cmpEl, correct); cmpEl.className = "";   // neutral reveal
+    setTimeout(newProblem, 1000);
+  }
+  document.getElementById("wclear").addEventListener("click", clearWrite);
+  document.getElementById("wcheck").addEventListener("click", checkWritten);
+  document.getElementById("wskip").addEventListener("click", skipTask);
+
+  function setMode(m) {
+    mode = (m === "write") ? "write" : "choose";
+    localStorage.setItem("lv_cmp_answer", mode);
+    document.querySelectorAll("[data-mode]").forEach(function (b) {
+      b.classList.toggle("active", b.dataset.mode === mode);
+    });
+    pad.hidden = (mode !== "choose");
+    writepad.hidden = (mode !== "write");
+    eqEl.classList.toggle("write", mode === "write");
+    clearWrite();
+    showBox(!busy);
+  }
+  document.querySelectorAll("[data-mode]").forEach(function (b) {
+    b.addEventListener("click", function () { setMode(b.dataset.mode); });
+  });
   pad.querySelectorAll("[data-op]").forEach(function (b) {
     b.addEventListener("click", function () { answer(b.dataset.op, b); });
   });
@@ -242,7 +499,7 @@
   backdrop.addEventListener("click", function () { setMenu(false); });
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && menuOpen) { setMenu(false); return; }
-    if (menuOpen) return;
+    if (menuOpen || mode !== "choose") return;
     var op = (e.key === "<" || e.key === ",") ? "<"
            : (e.key === ">" || e.key === ".") ? ">"
            : (e.key === "=") ? "=" : null;
@@ -251,22 +508,41 @@
 
   // theme
   function applyTheme() {
-    var color = localStorage.getItem("lv_theme") === "color";
-    if (color) document.documentElement.dataset.theme = "color";
-    else document.documentElement.removeAttribute("data-theme");
-    document.querySelectorAll("[data-theme-btn]").forEach(function (b) {
-      b.classList.toggle("active", (b.dataset.themeBtn === "color") === color);
-    });
+    LVTheme.apply();   // data-theme + active buttons (theme.js)
+    redrawWink();      // pen colour follows the theme
   }
-  document.querySelectorAll("[data-theme-btn]").forEach(function (b) {
-    b.addEventListener("click", function () {
-      localStorage.setItem("lv_theme", b.dataset.themeBtn === "color" ? "color" : "eink");
-      applyTheme();
+  document.addEventListener("lvtheme", applyTheme);   // theme.js handles the buttons
+
+  // Cipari: printed (font) or handwritten (the user's recorded digits).
+  // Shared key lv_num_hand across Saskaitīšana, Atņemšana and Salīdzini.
+  function setHand(on) {
+    try { localStorage.setItem("lv_num_hand", on ? "1" : "0"); } catch (e) {}
+    document.querySelectorAll("[data-hand]").forEach(function (b) {
+      b.classList.toggle("active", (b.dataset.hand === "1") === on);
     });
+    HandNum.rerender([aEl, cmpEl, bEl]);
+  }
+  document.querySelectorAll("[data-hand]").forEach(function (b) {
+    b.addEventListener("click", function () { setHand(b.dataset.hand === "1"); });
   });
 
+  var rzTimer = null;
+  function onResize() {
+    clearTimeout(rzTimer);
+    rzTimer = setTimeout(function () {
+      var vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+      document.getElementById("app").style.height = Math.round(vh) + "px";
+      if (!wframe.hidden) sizeWCanvas();
+    }, 150);
+  }
+  window.addEventListener("resize", onResize);
+  window.addEventListener("orientationchange", function () { setTimeout(onResize, 250); });
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", onResize);
+
   document.getElementById("appVer").textContent = "Versija: " + APPV;
+  setHand(HandNum.on());
   applyTheme();
+  setMode(mode);
   setRange(rangeKey);   // marks the active range + first problem
 })();
 </script>
