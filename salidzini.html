@@ -29,7 +29,9 @@
 
   #stage{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;
     position:relative;padding:clamp(10px,3vmin,28px);}
-  #eq{display:flex;align-items:center;justify-content:center;gap:clamp(10px,3vw,34px);
+  /* font-size is set by fitEq() from the measured stage x Skaitļu izmērs;
+     everything else is in em so the comparison scales as one piece */
+  #eq{display:flex;align-items:center;justify-content:center;gap:.3em;flex:0 0 auto;
     font-weight:800;font-size:clamp(48px,17vmin,160px);line-height:1;
     font-variant-numeric:tabular-nums;}
   [hidden]{display:none!important;}
@@ -54,8 +56,19 @@
   .wbtn:active{background:var(--sel);color:var(--onsel);}
   .wbtn.ok{border-color:var(--ok);color:var(--ok);}
   .wbtn.ok:active{background:var(--ok);color:#fff;}
+  #sizeRange{-webkit-appearance:none;appearance:none;background:transparent;
+    touch-action:auto;cursor:pointer;width:100%;height:clamp(20px,3.4vmin,28px);margin:0;}
+  #sizeRange::-webkit-slider-runnable-track{height:var(--bw);background:var(--ink);border-radius:2px;}
+  #sizeRange::-moz-range-track{height:var(--bw);background:var(--ink);border-radius:2px;}
+  #sizeRange::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:clamp(18px,3.2vmin,26px);height:clamp(18px,3.2vmin,26px);border-radius:50%;
+    background:var(--paper);border:var(--bw) solid var(--line);
+    margin-top:calc(var(--bw)/2 - clamp(18px,3.2vmin,26px)/2);}
+  #sizeRange::-moz-range-thumb{width:clamp(18px,3.2vmin,26px);height:clamp(18px,3.2vmin,26px);
+    border-radius:50%;background:var(--paper);border:var(--bw) solid var(--line);box-sizing:border-box;}
   .hint{font-size:clamp(11px,2vmin,14px);line-height:1.4;color:var(--guide);
     margin:clamp(6px,1.4vmin,10px) 0 0;}
+  #a,#b{min-width:1.2em;text-align:center;}   /* 1- or 2-digit: same width */
   #cmp{min-width:1.1em;text-align:center;border-bottom:clamp(4px,1vmin,8px) solid var(--guide);
     color:var(--guide);}
   /* handwritten numbers (handnum.js): a 1em-tall inline SVG per number,
@@ -112,8 +125,8 @@
   .ver{margin-top:auto;text-align:center;color:var(--guide);font-size:clamp(11px,1.8vmin,14px);
     padding-top:clamp(8px,2vmin,14px);font-variant-numeric:tabular-nums;}
 </style>
-<link rel="stylesheet" href="theme.css?v=369d27a">
-<script src="theme.js?v=369d27a"></script>
+<link rel="stylesheet" href="theme.css?v=7b3619d">
+<script src="theme.js?v=7b3619d"></script>
 </head>
 <body>
 <div id="app">
@@ -177,6 +190,12 @@
       </div>
     </div>
     <div>
+      <span class="lbl">Skaitļu izmērs</span>
+      <div class="row" style="margin-top:8px">
+        <input type="range" id="sizeRange" min="50" max="100" step="5" value="100" aria-label="Skaitļu izmērs">
+      </div>
+    </div>
+    <div>
       <span class="lbl">Ekrāns</span>
       <div class="row" style="margin-top:8px">
         <button class="cbtn" data-theme-btn="eink">E-tinte</button>
@@ -188,12 +207,12 @@
   </div>
 </aside>
 
-<script src="letters.js?v=369d27a"></script>
-<script src="handnum.js?v=369d27a"></script>
+<script src="letters.js?v=7b3619d"></script>
+<script src="handnum.js?v=7b3619d"></script>
 <script>
 "use strict";
 (function () {
-  var APPV = "369d27a";
+  var APPV = "7b3619d";
   var aEl = document.getElementById("a"), bEl = document.getElementById("b");
   var cmpEl = document.getElementById("cmp"), fxEl = document.getElementById("fx");
   var pad = document.getElementById("pad"), scoreEl = document.getElementById("score");
@@ -446,6 +465,7 @@
     eqEl.classList.toggle("write", mode === "write");
     clearWrite();
     showBox(!busy);
+    fitEq();
   }
   document.querySelectorAll("[data-mode]").forEach(function (b) {
     b.addEventListener("click", function () { setMode(b.dataset.mode); });
@@ -522,20 +542,46 @@
       b.classList.toggle("active", (b.dataset.hand === "1") === on);
     });
     HandNum.rerender([aEl, cmpEl, bEl].concat(Array.prototype.slice.call(pad.children)));
+    fitEq();   // handwritten widths differ — refit
   }
   document.querySelectorAll("[data-hand]").forEach(function (b) {
     b.addEventListener("click", function () { setHand(b.dataset.hand === "1"); });
   });
 
-  var rzTimer = null;
-  function onResize() {
-    clearTimeout(rzTimer);
-    rzTimer = setTimeout(function () {
-      var vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-      document.getElementById("app").style.height = Math.round(vh) + "px";
-      if (!wframe.hidden) sizeWCanvas();
-    }, 150);
+  // Skaitļu izmērs: 100% = as big as fits the measured stage; shared with
+  // Saskaitīšana/Atņemšana (lv_math_size)
+  var stageEl = document.getElementById("stage");
+  var sizeRange = document.getElementById("sizeRange");
+  var sizeV = parseInt(localStorage.getItem("lv_math_size") || "100", 10);
+  if (!(sizeV >= 50 && sizeV <= 100)) sizeV = 100;
+  sizeRange.value = sizeV;
+  sizeRange.addEventListener("input", function () {
+    sizeV = parseInt(sizeRange.value, 10);
+    localStorage.setItem("lv_math_size", String(sizeV));
+    fitEq();
+  });
+  function fitEq() {
+    var ss = getComputedStyle(stageEl);
+    var aw = stageEl.clientWidth - parseFloat(ss.paddingLeft) - parseFloat(ss.paddingRight);
+    var ah = stageEl.clientHeight - parseFloat(ss.paddingTop) - parseFloat(ss.paddingBottom);
+    if (aw < 10 || ah < 10) return;
+    eqEl.style.fontSize = "100px";                 // measure at a known size
+    var r = eqEl.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) return;
+    var fs = Math.min(100 * aw * 0.96 / r.width, 100 * ah * 0.85 / r.height, 240);
+    fs = Math.max(20, fs * sizeV / 100);
+    eqEl.style.fontSize = Math.floor(fs) + "px";
+    if (!wframe.hidden) sizeWCanvas();
   }
+  function layout() {
+    var vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    document.getElementById("app").style.height = Math.round(vh) + "px";
+    fitEq();
+  }
+  var rzTimer = null;
+  function onResize() { clearTimeout(rzTimer); rzTimer = setTimeout(layout, 150); }
+  window.addEventListener("load", function () { setTimeout(layout, 300); });
+  if (window.ResizeObserver) new ResizeObserver(function () { onResize(); }).observe(stageEl);
   window.addEventListener("resize", onResize);
   window.addEventListener("orientationchange", function () { setTimeout(onResize, 250); });
   if (window.visualViewport) window.visualViewport.addEventListener("resize", onResize);
@@ -545,6 +591,7 @@
   setHand(HandNum.on());
   applyTheme();
   setMode(mode);
+  layout();
   setRange(rangeKey);   // marks the active range + first problem
 })();
 </script>

@@ -135,8 +135,8 @@
   #writepad .whint{font-size:clamp(11px,2vmin,14px);line-height:1.35;
     color:var(--guide);text-align:center;margin:0;}
 </style>
-<link rel="stylesheet" href="theme.css?v=369d27a">
-<script src="theme.js?v=369d27a"></script>
+<link rel="stylesheet" href="theme.css?v=7b3619d">
+<script src="theme.js?v=7b3619d"></script>
 </head>
 <body>
 <div id="app">
@@ -213,14 +213,14 @@
   </div>
 </aside>
 
-<script src="letters.js?v=369d27a"></script>
-<script src="handnum.js?v=369d27a"></script>
-<script src="recognize.js?v=369d27a"></script>
-<script src="digitnet.js?v=369d27a"></script>
+<script src="letters.js?v=7b3619d"></script>
+<script src="handnum.js?v=7b3619d"></script>
+<script src="recognize.js?v=7b3619d"></script>
+<script src="digitnet.js?v=7b3619d"></script>
 <script>
 "use strict";
 (function () {
-  var APPV = "369d27a";
+  var APPV = "7b3619d";
   var OP = "sub";   // "add" or "sub"
   var aEl = document.getElementById("a"), bEl = document.getElementById("b");
   var ansEl = document.getElementById("ans"), fxEl = document.getElementById("fx");
@@ -563,6 +563,8 @@
   window.addEventListener("orientationchange", function () { setTimeout(onResize, 250); });
   if (window.visualViewport) window.visualViewport.addEventListener("resize", onResize);
   window.addEventListener("load", function () { setTimeout(layout, 300); });
+  // browser bars appearing/hiding resize the stage without a window resize
+  if (window.ResizeObserver) new ResizeObserver(function () { onResize(); }).observe(stageEl);
 
   document.getElementById("appVer").textContent = "Versija: " + APPV;
   applyTheme();

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Lasi un atrodi</title>
+<style>
+  :root{ --ink:#000; --paper:#fff; --guide:#9a9a9a; --ok:#0a7d24; --bad:#b00020; --bw:3px; }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Segoe UI",Arial,Helvetica,sans-serif;overflow:hidden;
+    touch-action:none;user-select:none;-webkit-user-select:none;-webkit-text-size-adjust:100%;}
+  #app{display:flex;flex-direction:column;height:100vh;height:100dvh;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right)
+            env(safe-area-inset-bottom) env(safe-area-inset-left);}
+  [hidden]{display:none!important;}
+
+  header{display:flex;align-items:center;gap:clamp(8px,2vw,14px);
+    padding:clamp(6px,1.6vmin,14px) clamp(10px,2.5vw,22px);
+    border-bottom:var(--bw) solid var(--line);flex:0 0 auto;}
+  header .title{font-size:clamp(16px,3.4vmin,24px);font-weight:800;
+    flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  header .prog,header .score{font-size:clamp(13px,2.6vmin,20px);font-weight:700;
+    white-space:nowrap;font-variant-numeric:tabular-nums;flex:0 0 auto;}
+  .iconbtn{font-size:clamp(18px,3.4vmin,26px);line-height:1;font-weight:700;
+    padding:clamp(4px,1vmin,8px) clamp(8px,1.6vw,12px);
+    border:var(--bw) solid var(--line);background:var(--paper);color:var(--ink);
+    border-radius:clamp(8px,1.4vmin,12px);cursor:pointer;flex:0 0 auto;touch-action:manipulation;}
+  .iconbtn:active,.iconbtn.active{background:var(--sel);color:var(--onsel);}
+
+  /* round: the word on top, two pictures below */
+  #stage{flex:1 1 auto;min-height:0;position:relative;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:clamp(10px,2.6vmin,24px);
+    padding:clamp(10px,2.6vmin,26px);}
+  #wordcard{width:min(100%,900px);height:clamp(110px,34vh,330px);flex:0 0 auto;
+    border:var(--bw) solid var(--line);border-radius:clamp(14px,3vmin,26px);
+    background:var(--paper);padding:clamp(4px,1vmin,10px) clamp(8px,2vmin,18px);
+    display:flex;align-items:center;justify-content:center;}
+  #word{display:block;width:100%;height:100%;overflow:visible;}
+  .glyph{fill:none;stroke:var(--ink);stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;}
+  .ptext{font-family:"Segoe UI",Arial,Helvetica,sans-serif;font-size:100px;font-weight:500;fill:var(--ink);}
+  #pics{width:min(100%,900px);flex:1 1 auto;min-height:0;max-height:56vh;
+    display:flex;gap:clamp(10px,2.6vmin,24px);}
+  /* no text labels on the pictures — the word is the only clue */
+  .pic{flex:1 1 0;min-width:0;position:relative;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:clamp(4px,1vmin,10px);padding:clamp(6px,1.6vmin,14px);
+    border:var(--bw) solid var(--line);border-radius:clamp(14px,3vmin,26px);
+    background:var(--paper);color:var(--ink);cursor:pointer;touch-action:manipulation;
+    overflow:hidden;}   /* belt and braces: nothing ever spills past the border */
+  /* --em is set by fitPics() from the real button box (vh/vmin guesses
+     overflowed on tablets with browser bars); CSS value is the first-paint fallback */
+  .pic .em{font-size:var(--em,clamp(96px,min(24vmin,20vw),200px));line-height:1;
+    font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;}
+  /* after a wrong tap: the picked picture's own word, for a moment */
+  .pic .cap{height:clamp(22px,5vmin,44px);visibility:hidden;font-size:clamp(22px,5vmin,44px);}
+  .pic .cap svg{display:block;height:1em;overflow:visible;}
+  .pic.show .cap{visibility:visible;}
+  .pic.right{border-color:var(--ok);box-shadow:inset 0 0 0 var(--bw) var(--ok);}
+  .pic.wrong{border-color:var(--bad);animation:nudge .35s ease;}
+  @keyframes nudge{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  @media (prefers-reduced-motion:reduce){ .pic.wrong{animation:none;} }
+  #fx{position:absolute;top:clamp(6px,2vmin,16px);right:clamp(10px,3vw,26px);
+    font-size:clamp(30px,7vmin,60px);line-height:1;opacity:0;transition:opacity .15s;}
+  #fx.show{opacity:1;} #fx.good{color:var(--ok);}
+
+  /* end of a 10-round session */
+  #done{text-align:center;display:flex;flex-direction:column;align-items:center;
+    gap:clamp(10px,2.6vmin,22px);}
+  #done .big{font-size:clamp(56px,14vmin,120px);line-height:1;}
+  #done .t{font-size:clamp(24px,5.4vmin,44px);font-weight:800;}
+  #done .s{font-size:clamp(16px,3.4vmin,26px);font-weight:700;}
+  #again{font-size:clamp(18px,3.6vmin,28px);font-weight:800;
+    padding:clamp(10px,2.2vmin,18px) clamp(20px,5vw,40px);
+    border:var(--bw) solid var(--line);background:var(--paper);color:var(--ink);
+    border-radius:clamp(10px,2vmin,16px);cursor:pointer;touch-action:manipulation;}
+  #again:active{background:var(--sel);color:var(--onsel);}
+
+  /* drawer (same as the other sections) */
+  #backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:15;
+    opacity:0;pointer-events:none;transition:opacity .22s ease;}
+  #backdrop.open{opacity:1;pointer-events:auto;}
+  #menu{position:fixed;top:0;left:0;bottom:0;z-index:20;width:min(88vw,340px);
+    background:var(--paper);border-right:var(--bw) solid var(--line);
+    display:flex;flex-direction:column;transform:translateX(-100%);visibility:hidden;
+    transition:transform .22s ease, visibility 0s linear .22s;}
+  #menu.open{transform:translateX(0);visibility:visible;transition:transform .22s ease, visibility 0s;}
+  @media (prefers-reduced-motion:reduce){ #menu,#backdrop{transition:none;} }
+  .menu-head{display:flex;align-items:center;gap:clamp(8px,2vw,14px);flex:0 0 auto;
+    padding:clamp(8px,1.8vmin,14px) clamp(10px,2.5vw,18px);
+    padding-top:calc(clamp(8px,1.8vmin,14px) + env(safe-area-inset-top));
+    border-bottom:var(--bw) solid var(--line);}
+  .menu-head .t{font-size:clamp(15px,3vmin,22px);font-weight:800;flex:1 1 auto;min-width:0;}
+  .menu-body{flex:1 1 auto;min-height:0;overflow-y:auto;touch-action:pan-y;
+    padding:clamp(10px,2.4vmin,18px);
+    padding-bottom:calc(clamp(10px,2.4vmin,18px) + env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;gap:clamp(12px,2.6vmin,18px);}
+  .cbtn{font-size:clamp(14px,2.4vmin,19px);font-weight:700;text-align:center;text-decoration:none;
+    padding:clamp(9px,1.8vmin,13px) clamp(10px,2vw,16px);border:var(--bw) solid var(--line);
+    background:var(--paper);color:var(--ink);border-radius:clamp(9px,1.6vmin,13px);
+    cursor:pointer;touch-action:manipulation;display:block;}
+  .cbtn:active,.cbtn.active{background:var(--sel);color:var(--onsel);}
+  .lbl{font-size:clamp(12px,2vmin,16px);font-weight:700;color:var(--guide);
+    text-transform:uppercase;letter-spacing:.5px;}
+  .row{display:flex;gap:clamp(6px,1.4vw,10px);}
+  .row .cbtn{flex:1 1 0;min-width:0;}
+  .hint{font-size:clamp(12px,2.2vmin,15px);line-height:1.4;color:var(--guide);margin:0;}
+  .ver{margin-top:auto;text-align:center;color:var(--guide);font-size:clamp(11px,1.8vmin,14px);
+    padding-top:clamp(8px,2vmin,14px);font-variant-numeric:tabular-nums;}
+</style>
+<link rel="stylesheet" href="theme.css?v=7b3619d">
+<script src="theme.js?v=7b3619d"></script>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button class="iconbtn" id="menuBtn" aria-label="Izvēlne" aria-controls="menu" aria-expanded="false">☰</button>
+    <div class="title">Lasi un atrodi</div>
+    <div class="prog" id="prog">1 / 10</div>
+    <div class="score" id="score">✓ 0</div>
+  </header>
+  <div id="stage">
+    <div id="wordcard"><svg id="word" preserveAspectRatio="xMidYMid meet" role="img"></svg></div>
+    <div id="pics">
+      <button class="pic" type="button" id="pic0"><span class="em"></span><span class="cap"></span></button>
+      <button class="pic" type="button" id="pic1"><span class="em"></span><span class="cap"></span></button>
+    </div>
+    <div id="done" hidden>
+      <div class="big">⭐</div>
+      <div class="t">Lieliski!</div>
+      <div class="s" id="doneScore"></div>
+      <button id="again" type="button">Spēlēt vēlreiz ▶</button>
+    </div>
+    <div id="fx"></div>
+  </div>
+</div>
+
+<div id="backdrop"></div>
+<aside id="menu" aria-labelledby="menuTitle">
+  <div class="menu-head">
+    <button class="iconbtn" id="menuClose" aria-label="Aizvērt">✕</button>
+    <span class="t" id="menuTitle">Izvēlne</span>
+  </div>
+  <div class="menu-body">
+    <a class="cbtn" href="index.html">🏠 Sākums</a>
+    <p class="hint">Izlasi vārdu un pieskaries pareizajam attēlam. Vārds netiek nolasīts skaļi — bērns to izlasa pats.</p>
+    <div>
+      <span class="lbl">Rakstīti burti</span>
+      <div class="row" style="margin-top:8px">
+        <button class="cbtn" data-case="upper">ABC</button>
+        <button class="cbtn" data-case="lower">abc</button>
+        <button class="cbtn" data-case="mixed">Abc</button>
+      </div>
+    </div>
+    <div>
+      <span class="lbl">Drukāti burti</span>
+      <div class="row" style="margin-top:8px">
+        <button class="cbtn" data-case="pupper">ABC</button>
+        <button class="cbtn" data-case="plower">abc</button>
+        <button class="cbtn" data-case="pmixed">Abc</button>
+      </div>
+    </div>
+    <div>
+      <span class="lbl">Ekrāns</span>
+      <div class="row" style="margin-top:8px">
+        <button class="cbtn" data-theme-btn="eink">E-tinte</button>
+        <button class="cbtn" data-theme-btn="color">Krāsains</button>
+        <button class="cbtn" data-theme-btn="dark">Tumšs</button>
+      </div>
+    </div>
+    <div class="ver" id="appVer"></div>
+  </div>
+</aside>
+
+<script src="letters.js?v=7b3619d"></script>
+<script src="vardupari.js?v=7b3619d"></script>
+<script>
+"use strict";
+(function () {
+  var APPV = "7b3619d";
+  var SVGNS = "http://www.w3.org/2000/svg";
+  var ROUNDS = 10;
+
+  // pairs from vardupari.js; drop any malformed line rather than crash
+  var PAIRS = (window.WORD_PAIRS || []).filter(function (p) {
+    return p && p.length === 2 && p[0] && p[1] && p[0][0] && p[0][1] && p[1][0] && p[1][1];
+  });
+
+  var ENT_U = {}, ENT_L = {};
+  LETTERS_UPPER.forEach(function (e) { ENT_U[e.char] = e; });
+  LETTERS_LOWER.forEach(function (e) { ENT_L[e.char] = e; });
+
+  // letter case: the same setting (and key) as Vārdi, default handwritten Abc
+  var mode = localStorage.getItem("lv_var_case") || "mixed";
+  if (["upper", "lower", "mixed", "pupper", "plower", "pmixed"].indexOf(mode) < 0) mode = "mixed";
+  var CAP_DY = -5;            // lift handwritten capitals onto the lowercase baseline
+  var GAP = 7, PAD = 3;
+
+  function caseOf(raw) {
+    if (mode === "mixed" || mode === "pmixed") return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+    if (mode === "upper" || mode === "pupper") return raw.toUpperCase();
+    return raw.toLowerCase();
+  }
+  // draw `raw` into an <svg> (handwritten glyphs or printed text) and set a
+  // tight viewBox; returns its width/height ratio. The svg must be rendered
+  // (visibility:hidden is fine) so getBBox can measure.
+  function drawWord(svg, raw) {
+    var text = caseOf(raw);
+    var isPrint = mode.charAt(0) === "p";
+    var mixed = (mode === "mixed");
+    var upper = (mode === "upper");
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var w, y0, y1;
+    if (isPrint) {
+      var t = document.createElementNS(SVGNS, "text");
+      t.setAttribute("class", "ptext"); t.setAttribute("x", 0); t.setAttribute("y", 0);
+      t.textContent = text; svg.appendChild(t);
+      var tb = t.getBBox();
+      t.setAttribute("transform", "translate(" + (-tb.x) + "," + (-tb.y) + ")");
+      w = tb.width; y0 = 0; y1 = tb.height;
+    } else {
+      var cursor = 0; y0 = 10; y1 = 92;      // fixed band so every word has the same letter size
+      text.split("").forEach(function (ch, i) {
+        var cap = mixed ? i === 0 : upper;
+        var dy = (mixed && cap) ? CAP_DY : 0;
+        var e = (cap ? ENT_U : ENT_L)[ch];
+        var g = document.createElementNS(SVGNS, "g");
+        if (e) strokesFor(e).forEach(function (d) {
+          var p = document.createElementNS(SVGNS, "path");
+          p.setAttribute("d", d); p.setAttribute("class", "glyph"); g.appendChild(p);
+        });
+        svg.appendChild(g);
+        var b = g.getBBox();
+        g.setAttribute("transform", "translate(" + (cursor - b.x) + "," + dy + ")");
+        cursor += b.width + GAP;
+        if (b.y + dy < y0) y0 = b.y + dy;
+        if (b.y + dy + b.height > y1) y1 = b.y + dy + b.height;
+      });
+      w = cursor - GAP;
+    }
+    var vw = w + 2 * PAD, vh = (y1 - y0) + 2 * PAD;
+    svg.setAttribute("viewBox", (-PAD) + " " + (y0 - PAD) + " " + vw + " " + vh);
+    svg.setAttribute("aria-label", text);
+    return vw / vh;
+  }
+
+  var wordSvg = document.getElementById("word");
+  var pics = [document.getElementById("pic0"), document.getElementById("pic1")];
+  var picsWrap = document.getElementById("pics"), wordcard = document.getElementById("wordcard");
+  var doneEl = document.getElementById("done"), fxEl = document.getElementById("fx");
+  var progEl = document.getElementById("prog"), scoreEl = document.getElementById("score");
+
+  var round = 0, firstTry = 0, missed = false, busy = false, lastPair = -1;
+  var cur = null;   // { target: [word, emoji], options: [[w,e],[w,e]], right: 0|1 }
+  var capTimers = [null, null];
+
+  function rnd(n) { return Math.floor(Math.random() * n); }
+
+  function pickPair() {
+    if (PAIRS.length < 2) return 0;
+    var i;
+    do { i = rnd(PAIRS.length); } while (i === lastPair);   // never the same pair twice in a row
+    return i;
+  }
+
+  function renderCaption(btn, word) {
+    var cap = btn.querySelector(".cap");
+    cap.textContent = "";
+    var s = document.createElementNS(SVGNS, "svg");
+    s.setAttribute("aria-hidden", "true");
+    cap.appendChild(s);
+    var ratio = drawWord(s, word);
+    s.style.width = ratio + "em";
+  }
+
+  function showRound() {
+    var pi = pickPair(); lastPair = pi;
+    var pair = PAIRS[pi];
+    var t = rnd(2);                       // which word of the pair is the target
+    var right = rnd(2);                   // which side the matching picture goes
+    var other = pair[1 - t];
+    cur = { target: pair[t], right: right, options: right === 0 ? [pair[t], other] : [other, pair[t]] };
+    missed = false; busy = false;
+    progEl.textContent = (round + 1) + " / " + ROUNDS;
+    drawWord(wordSvg, cur.target[0]);
+    pics.forEach(function (b, i) {
+      clearTimeout(capTimers[i]);
+      b.className = "pic";
+      b.querySelector(".em").textContent = cur.options[i][1];
+      b.setAttribute("aria-label", "Attēls " + (i + 1));   // never the word itself
+      renderCaption(b, cur.options[i][0]);
+    });
+  }
+
+  function tap(i) {
+    if (busy || !cur) return;
+    var b = pics[i];
+    if (i === cur.right) {
+      busy = true;
+      if (!missed) firstTry++;
+      scoreEl.textContent = "✓ " + firstTry;
+      b.classList.add("right");
+      fxEl.textContent = "✓"; fxEl.className = "show good";
+      chime();
+      setTimeout(function () {
+        fxEl.className = "";
+        round++;
+        if (round >= ROUNDS) finish(); else showRound();
+      }, 1000);
+    } else {
+      // gentle: soft tone, small nudge, and the picked picture's own word for a moment
+      missed = true;
+      b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong", "show");
+      softTone();
+      clearTimeout(capTimers[i]);
+      capTimers[i] = setTimeout(function () { b.classList.remove("show", "wrong"); }, 1800);
+    }
+  }
+  pics.forEach(function (b, i) { b.addEventListener("click", function () { tap(i); }); });
+
+  function finish() {
+    wordcard.hidden = true; picsWrap.hidden = true; doneEl.hidden = false;
+    progEl.textContent = ROUNDS + " / " + ROUNDS;
+    document.getElementById("doneScore").textContent =
+      "Pareizi ar pirmo reizi: " + firstTry + " no " + ROUNDS;
+  }
+  function startSession() {
+    round = 0; firstTry = 0; lastPair = -1;
+    scoreEl.textContent = "✓ 0";
+    doneEl.hidden = true; wordcard.hidden = false; picsWrap.hidden = false;
+    showRound();
+    fitPics();
+  }
+  document.getElementById("again").addEventListener("click", startSession);
+
+  // sounds: the same short sine beep as the maths pages for "right"; a soft,
+  // low, quiet two-note fall for "try again" (no buzz)
+  var actx = null;
+  function tone(freq, start, dur, vol) {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    var o = actx.createOscillator(), g = actx.createGain(), t0 = actx.currentTime + start;
+    o.connect(g); g.connect(actx.destination);
+    o.type = "sine"; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.001, t0);
+    g.gain.exponentialRampToValueAtTime(vol, t0 + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    o.start(t0); o.stop(t0 + dur + 0.02);
+  }
+  function chime() { try { tone(660, 0, 0.35, 0.22); tone(880, 0.12, 0.4, 0.18); } catch (e) {} }
+  function softTone() { try { tone(392, 0, 0.25, 0.08); tone(330, 0.14, 0.3, 0.07); } catch (e) {} }
+
+  // letter case (shared lv_var_case with Vārdi)
+  function updateCaseBtns() {
+    document.querySelectorAll("[data-case]").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-case") === mode);
+    });
+  }
+  document.querySelectorAll("[data-case]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      mode = b.getAttribute("data-case");
+      localStorage.setItem("lv_var_case", mode);
+      updateCaseBtns();
+      if (cur) {
+        drawWord(wordSvg, cur.target[0]);
+        pics.forEach(function (p, i) { renderCaption(p, cur.options[i][0]); });
+      }
+    });
+  });
+
+  // drawer
+  var menu = document.getElementById("menu"), backdrop = document.getElementById("backdrop");
+  var menuBtn = document.getElementById("menuBtn"), menuOpen = false;
+  function setMenu(open) {
+    menuOpen = open;
+    menu.classList.toggle("open", open); backdrop.classList.toggle("open", open);
+    menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    menuBtn.classList.toggle("active", open);
+  }
+  menuBtn.addEventListener("click", function () { setMenu(!menuOpen); });
+  document.getElementById("menuClose").addEventListener("click", function () { setMenu(false); });
+  backdrop.addEventListener("click", function () { setMenu(false); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && menuOpen) { setMenu(false); return; }
+    if (menuOpen) return;
+    if (e.key === "ArrowLeft" || e.key === "1") tap(0);
+    else if (e.key === "ArrowRight" || e.key === "2") tap(1);
+  });
+
+  // theme (theme.js handles the buttons; glyphs follow --ink via CSS)
+  document.addEventListener("lvtheme", function () { LVTheme.apply(); });
+
+  // emoji size from the actual button box: as big as fits (≥96px when there
+  // is room, never bigger than the box — overflow is worse than small)
+  function fitPics() {
+    var b = pics[0];
+    if (!b || picsWrap.hidden) return;
+    var cs = getComputedStyle(b);
+    var cap = b.querySelector(".cap");
+    var w = b.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    var h = b.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+            - cap.offsetHeight - (parseFloat(cs.rowGap) || 0);
+    if (w < 10 || h < 10) return;
+    // emoji glyphs are a bit wider/taller than 1em on some platforms
+    var size = Math.floor(Math.min(w / 1.3, h / 1.2, 220));
+    picsWrap.style.setProperty("--em", Math.max(32, size) + "px");
+  }
+
+  // JS-measured height (dvh over-reports on some e-ink tablets)
+  function layout() {
+    var vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    document.getElementById("app").style.height = Math.round(vh) + "px";
+    fitPics();
+  }
+  if (window.ResizeObserver) new ResizeObserver(function () { fitPics(); }).observe(picsWrap);
+  var rzT = null;
+  function onResize() { clearTimeout(rzT); rzT = setTimeout(layout, 150); }
+  window.addEventListener("resize", onResize);
+  window.addEventListener("orientationchange", function () { setTimeout(onResize, 250); });
+  window.addEventListener("load", function () { setTimeout(layout, 300); });
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", onResize);
+
+  document.getElementById("appVer").textContent = "Versija: " + APPV;
+  updateCaseBtns();
+  layout();
+  if (PAIRS.length) startSession();
+})();
+</script>
+</body>
+</html>

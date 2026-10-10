@@ -70,6 +70,7 @@
   :root[data-theme] .c8{--accent:#b8932f;}
   :root[data-theme] .c9{--accent:#6a7bc8;}
   :root[data-theme] .c10{--accent:#4c95b8;}
+  :root[data-theme] .c11{--accent:#a7794f;}
   .card .desc{font-size:clamp(11px,2vmin,14px);font-weight:600;color:var(--guide);
     text-transform:none;letter-spacing:0;line-height:1.3;}
 
@@ -125,8 +126,8 @@
     color:var(--guide);font-size:clamp(11px,1.8vmin,14px);
     padding:clamp(8px,2vmin,12px);font-variant-numeric:tabular-nums;}
 </style>
-<link rel="stylesheet" href="theme.css?v=369d27a">
-<script src="theme.js?v=369d27a"></script>
+<link rel="stylesheet" href="theme.css?v=7b3619d">
+<script src="theme.js?v=7b3619d"></script>
 </head>
 <body>
 <div id="app">
@@ -155,6 +156,10 @@
       <div class="ic">📚</div>
       <div class="cap">Lasīt</div>
     </a>
+    <a class="card c11" href="atrodi.html">
+      <div class="ic">🔎</div>
+      <div class="cap">Lasi un atrodi</div>
+    </a>
     <a class="card c2" href="cipari.html">
       <div class="ic">🔢</div>
       <div class="cap">Raksti ciparus</div>
@@ -182,7 +187,7 @@
     </a>
   </main>
 
-  <div class="ver">Versija: 369d27a</div>
+  <div class="ver">Versija: 7b3619d</div>
 </div>
 
 <div id="logPop" role="dialog" aria-modal="true" aria-labelledby="logTitle">
@@ -192,7 +197,7 @@
       <button class="iconbtn" id="logClose" aria-label="Aizvērt">✕</button>
     </div>
     <div class="log-body" id="logBody"></div>
-    <div class="log-foot">Versija: 369d27a</div>
+    <div class="log-foot">Versija: 7b3619d</div>
   </div>
 </div>
 
@@ -227,6 +232,7 @@
   // (or a new group). Kept here so the home screen is the single source.
   var CHANGELOG = [
     { date: "Oktobris 2026", items: [
+      "🔎 Jauns: Lasi un atrodi — izlasi vārdu un atrodi pareizo attēlu (Pīle vai Pele?). Trenē izpratni par izlasīto.",
       "✍️ Saskaitīšanā, Atņemšanā un Salīdzini atbildi pēc noklusējuma raksta ar roku; arī atbilžu pogas rāda rakstītus ciparus un zīmes.",
       "✍️ Salīdzini: zīmi <, = vai > var arī uzrakstīt ar roku lodziņā starp skaitļiem — Izvēlne → Atbilde → Rakstīt.",
       "✍️ Saskaitīšanā, Atņemšanā un Salīdzini: cipari var būt rakstīti ar roku — Izvēlne → Cipari → Rakstīti.",
