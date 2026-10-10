@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Lasīt</title>
-<script src="theme.js?v=f2316bd"></script>
+<script src="theme.js?v=683169c"></script>
 <style>
   /* reading is black on white — no colour theme here; only Tumšs (dark)
      flips it, so a dark-mode reader isn't hit by a white page */
@@ -87,7 +87,7 @@
   <header>
     <button class="iconbtn" id="menuBtn" aria-label="Izvēlne" aria-controls="menu" aria-expanded="false">☰</button>
     <div class="title">Lasīt</div>
-    <div class="count" id="count">1 / 5</div>
+    <div class="count" id="count">1 / 8</div>
   </header>
   <nav id="bar">
     <button id="prev">◀ Atpakaļ</button>
@@ -118,16 +118,24 @@
 <script>
 "use strict";
 (function () {
-  var APPV = "f2316bd";
+  var APPV = "683169c";
 
   // Short easy-Latvian stories; words split into syllables with "-" for early
   // readers (same style as the reference readers, original texts).
+  // Splitting: one consonant between vowels starts the next syllable (MĀ-JA),
+  // two are split between them (SIL-TI, PUT-NI); divskaņi ai/au/ei/ie/ui stay
+  // whole (MAI-ZI, CIE-MOS, STRAU-TĀ); one-syllable words get no dash.
+  // Stories 6–8 follow the Zilbes levels: 6 mostly open syllables, 7 brings
+  // divskaņi (ie, ei), 8 consonant clusters (str, dz, sk, sp).
   var STORIES = [
     { pic: "🐱", lines: ["MAN IR KA-ĶIS.", "VIŅŠ IR MAZS.", "KA-ĶIS ĒD ZI-VIS.", "VI-ŅAM PA-TĪK GU-LĒT."] },
     { pic: "🍂", lines: ["Ā-RĀ IR RU-DENS.", "KO-KI IR DZEL-TE-NI.", "LĪST LIE-TUS.", "ES SKRIE-NU MĀ-JĀS."] },
     { pic: "🐶", lines: ["TE IR SUNS.", "VIŅŠ SPĒ-LĒ-JAS AR BUM-BU.", "SUNS SKRIEN ĀT-RI.", "LABS SUNS!"] },
     { pic: "⛄", lines: ["Ā-RĀ SNIEG.", "VISS IR BALTS.", "MĒS SLI-DI-NĀ-MIES.", "IR JAU-KI ZIE-MĀ!"] },
     { pic: "☀️", lines: ["IR RĪTS.", "ES Ē-DU MAI-ZI.", "MAM-MA DZER TĒ-JU.", "LA-BU A-PE-TĪ-TI!"] },
+    { pic: "🦆", lines: ["TE IR PĪ-LE.", "TAI IR TRĪS PĪ-LĒ-NI.", "VI-ŅI PELD U-PĒ.", "MĒS DO-DAM VI-ŅIEM SĒK-LAS.", "PĪ-LE SA-KA: PĒK, PĒK!"] },
+    { pic: "👵", lines: ["ES E-JU CIE-MOS PIE O-MES.", "O-ME CEP PĪ-RĀ-GUS.", "PĪ-RĀ-GI IR SIL-TI UN GAR-ŠĪ-GI.", "PAL-DIES, O-MĪT!"] },
+    { pic: "🌷", lines: ["IR PA-VA-SA-RIS.", "PUT-NI DZIED KO-KOS.", "STRAU-TĀ TEK Ū-DENS.", "BĒR-NI SPĒ-LĒ-JAS PA-GAL-MĀ.", "VISS IR ZAĻŠ UN SKAISTS!"] },
   ];
 
   var idx = 0;
