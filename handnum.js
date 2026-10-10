@@ -2,7 +2,7 @@
 // (letters.js, LETTERS_DIGITS) plus simple hand-drawn + − = < > ?, laid out as
 // one inline SVG that is 1em tall, so it scales with the surrounding font and
 // takes its colour from CSS `color` (good/bad/guide classes keep working).
-// Needs letters.js loaded first. Setting: localStorage lv_num_hand = "1".
+// Needs letters.js loaded first. Setting: localStorage lv_num_hand ("0" = printed; default handwritten).
 var HandNum = (function () {
   "use strict";
   var SVGNS = "http://www.w3.org/2000/svg";
@@ -61,7 +61,8 @@ var HandNum = (function () {
   }
 
   function on() {
-    try { return localStorage.getItem("lv_num_hand") === "1"; } catch (e) { return false; }
+    // default ON (handwritten) — only an explicit "0" means printed
+    try { return localStorage.getItem("lv_num_hand") !== "0"; } catch (e) { return true; }
   }
 
   // render `str` into el, handwritten or as plain text; remembers the value
