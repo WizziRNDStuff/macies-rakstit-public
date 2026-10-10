@@ -67,6 +67,7 @@
     padding:clamp(10px,2vmin,18px) 0;border:var(--bw) solid var(--line);
     background:var(--paper);color:var(--ink);border-radius:clamp(9px,1.6vmin,14px);
     cursor:pointer;touch-action:manipulation;}
+  .num .hn{margin:0 auto;}   /* handwritten answer buttons, centred */
   .num:active{background:var(--sel);color:var(--onsel);}
   .num.wrong{background:var(--bad);border-color:var(--bad);color:var(--paper);}
   .num.right{background:var(--ok);border-color:var(--ok);color:var(--paper);}
@@ -134,8 +135,8 @@
   #writepad .whint{font-size:clamp(11px,2vmin,14px);line-height:1.35;
     color:var(--guide);text-align:center;margin:0;}
 </style>
-<link rel="stylesheet" href="theme.css?v=5622050">
-<script src="theme.js?v=5622050"></script>
+<link rel="stylesheet" href="theme.css?v=369d27a">
+<script src="theme.js?v=369d27a"></script>
 </head>
 <body>
 <div id="app">
@@ -212,14 +213,14 @@
   </div>
 </aside>
 
-<script src="letters.js?v=5622050"></script>
-<script src="handnum.js?v=5622050"></script>
-<script src="recognize.js?v=5622050"></script>
-<script src="digitnet.js?v=5622050"></script>
+<script src="letters.js?v=369d27a"></script>
+<script src="handnum.js?v=369d27a"></script>
+<script src="recognize.js?v=369d27a"></script>
+<script src="digitnet.js?v=369d27a"></script>
 <script>
 "use strict";
 (function () {
-  var APPV = "5622050";
+  var APPV = "369d27a";
   var OP = "sub";   // "add" or "sub"
   var aEl = document.getElementById("a"), bEl = document.getElementById("b");
   var ansEl = document.getElementById("ans"), fxEl = document.getElementById("fx");
@@ -301,7 +302,7 @@
     for (var i = 1; i <= RANGE[1]; i++) {
       (function (n) {
         var b = document.createElement("button");
-        b.type = "button"; b.className = "num"; b.textContent = n;
+        b.type = "button"; b.className = "num"; HandNum.put(b, n);
         b.addEventListener("click", function () { answer(n, b); });
         pad.appendChild(b);
       })(i);
@@ -325,7 +326,7 @@
   // The child writes the answer by hand; DigitRecog checks it against the
   // expected number's shape (recognize.js). Toggle in the drawer: Izvēlēties
   // (the 1..10 row) vs Rakstīt (write it).
-  var mode = localStorage.getItem("lv_math_answer") === "write" ? "write" : "choose";
+  var mode = localStorage.getItem("lv_math_answer") === "choose" ? "choose" : "write";   // default: Rakstīt
   var writepad = document.getElementById("writepad");
   var wframe = document.getElementById("wframe");
   var eqEl = document.getElementById("eq");
@@ -542,7 +543,8 @@
     document.querySelectorAll("[data-hand]").forEach(function (b) {
       b.classList.toggle("active", (b.dataset.hand === "1") === on);
     });
-    HandNum.rerender([aEl, document.getElementById("op"), bEl, document.getElementById("eqs"), ansEl]);
+    HandNum.rerender([aEl, document.getElementById("op"), bEl, document.getElementById("eqs"), ansEl]
+      .concat(Array.prototype.slice.call(pad.children)));   // answer buttons too
     fitEq()   // handwritten widths differ — refit;
   }
   document.querySelectorAll("[data-hand]").forEach(function (b) {

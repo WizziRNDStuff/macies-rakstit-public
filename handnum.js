@@ -70,13 +70,14 @@ var HandNum = (function () {
   function put(el, str) {
     str = String(str);
     el.setAttribute("data-v", str);
+    var keep = el.hasAttribute("data-label-fixed");   // e.g. "mazāks" on < buttons
     if (on()) {
       el.textContent = "";
       el.appendChild(svg(str));
-      el.setAttribute("aria-label", str);
+      if (!keep) el.setAttribute("aria-label", str);
     } else {
       el.textContent = str;
-      el.removeAttribute("aria-label");
+      if (!keep) el.removeAttribute("aria-label");
     }
   }
   function rerender(els) {
